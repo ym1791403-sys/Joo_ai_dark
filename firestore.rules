@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. سجلات المحادثات المباشرة بين المستخدم والنظام
+    match /joo_chat_history/{document=**} {
+      allow read, write: if true;
+    }
+
+    // 2. نتائج الفحص السيبراني وتحليل السيرفرات
+    match /joo_scans/{document=**} {
+      allow read, write: if true;
+    }
+
+    // 3. وضع التطوير الشامل لكافة مجموعات JOO AI DARK
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
