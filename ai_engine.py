@@ -85,7 +85,7 @@ def call_gemini_api(api_key, user_message, target_host="", live_audit=None):
             headers={'Content-Type': 'application/json'}
         )
         try:
-            with urllib.request.urlopen(req, timeout=7.0) as response:
+            with urllib.request.urlopen(req, timeout=5.0) as response:
                 res_data = json.loads(response.read().decode('utf-8'))
                 candidates = res_data.get('candidates', [])
                 if candidates and 'content' in candidates[0]:
