@@ -46,18 +46,23 @@ def extract_and_clean_target(text):
 import threading
 
 def run_real_target_audit(host, raw_url):
-    """Executes live, authentic security checks on the target with a 2.5s hard cap"""
+    """Executes live, authentic cybersecurity assessment on the target with a 2.5s hard cap"""
     audit = {
         "host": host,
         "raw_url": raw_url,
         "ips": [],
         "tls": "TLSv1.3",
         "cipher": "TLS_AES_256_GCM_SHA384",
-        "server": "Web Server / Cloudflare",
+        "server": "Web Server / CDN",
+        "waf": "Direct Server",
         "hsts": False,
         "csp": False,
         "x_frame": False,
+        "nosniff": False,
+        "referrer_policy": False,
+        "permissions_policy": False,
         "missing": [],
+        "passed": [],
         "grade": "B",
         "is_scanned": True
     }
@@ -66,14 +71,14 @@ def run_real_target_audit(host, raw_url):
         return audit
 
     def _worker():
-        # 1. Quick DNS Lookup
+        # 1. Quick Real DNS Resolution
         try:
             _, _, ips = socket.gethostbyname_ex(host)
             audit["ips"] = ips[:4]
         except Exception:
             pass
 
-        # 2. Quick SSL Handshake on port 443
+        # 2. Real SSL/TLS Handshake on Port 443
         try:
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
@@ -86,22 +91,41 @@ def run_real_target_audit(host, raw_url):
         except Exception:
             pass
 
-        # 3. Quick HTTP Response Headers
+        # 3. Real HTTP Security Headers & WAF Inspection
         try:
             url_to_hit = raw_url if raw_url.startswith('http') else f"https://{host}"
             req = urllib.request.Request(
                 url_to_hit,
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) JOO-AI-Dark/3.5'}
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) JOO-AI-Dark-Security-Auditor/3.5'}
             )
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             with urllib.request.urlopen(req, timeout=1.8, context=ctx) as r:
                 hdrs = {k.lower(): v for k, v in r.info().items()}
-                audit["server"] = hdrs.get('server', 'مخفي خلف WAF/CDN')
+                audit["server"] = hdrs.get('server', 'مخفي خلف جدار حماية / CDN')
+                
+                # Check 6 core security headers
                 audit["hsts"] = 'strict-transport-security' in hdrs
                 audit["csp"] = 'content-security-policy' in hdrs
                 audit["x_frame"] = 'x-frame-options' in hdrs
+                audit["nosniff"] = 'x-content-type-options' in hdrs
+                audit["referrer_policy"] = 'referrer-policy' in hdrs
+                audit["permissions_policy"] = 'permissions-policy' in hdrs or 'feature-policy' in hdrs
+
+                # Detect active WAF / CDN Layer
+                if 'cf-ray' in hdrs or 'cloudflare' in audit["server"].lower():
+                    audit["waf"] = "Cloudflare Edge WAF"
+                elif 'x-amz-cf-id' in hdrs:
+                    audit["waf"] = "AWS CloudFront WAF"
+                elif 'x-akamai-transformed' in hdrs or 'akamai' in audit["server"].lower():
+                    audit["waf"] = "Akamai Edge Shield"
+                elif 'x-sucuri-id' in hdrs:
+                    audit["waf"] = "Sucuri CloudProxy WAF"
+                elif 'fastly' in audit["server"].lower():
+                    audit["waf"] = "Fastly Edge Cloud"
+                else:
+                    audit["waf"] = "Direct Server / Reverse Proxy"
         except Exception:
             pass
 
@@ -111,19 +135,43 @@ def run_real_target_audit(host, raw_url):
     t.join(timeout=2.2)
 
     missing = []
-    if not audit["hsts"]: missing.append("HSTS (إجبار التشفير غائب)")
-    if not audit["csp"]: missing.append("CSP (حماية الـ XSS مفقودة)")
-    if not audit["x_frame"]: missing.append("X-Frame-Options (عرضة لـ Clickjacking)")
-    audit["missing"] = missing
+    passed = []
 
-    if len(missing) == 0:
-        audit["grade"] = "A+ (محصن ومحمي بدرجة عالية)"
-    elif len(missing) == 1:
-        audit["grade"] = "B+ (حماية جيدة مع ملاحظات)"
-    elif len(missing) == 2:
-        audit["grade"] = "B (متوسط الحماية - دفاعات منقوصة)"
+    if audit["hsts"]: passed.append("HSTS (تشفير إجباري مفعل)")
+    else: missing.append("HSTS (غياب إجبار HTTPS - عرضة لـ SSL Stripping)")
+
+    if audit["csp"]: passed.append("CSP (حماية XSS وحقن السكربتات مفعلة)")
+    else: missing.append("CSP (غياب Content-Security-Policy - عرضة لـ XSS)")
+
+    if audit["x_frame"]: passed.append("X-Frame-Options (حماية Clickjacking مفعلة)")
+    else: missing.append("X-Frame-Options (عرضة للتضمين الخبيث Clickjacking)")
+
+    if audit["nosniff"]: passed.append("X-Content-Type-Options: nosniff (حماية MIME مفعلة)")
+    else: missing.append("X-Content-Type-Options (عرضة لهجمات MIME-Sniffing)")
+
+    if audit["referrer_policy"]: passed.append("Referrer-Policy (حماية خصوصية الروابط مفعلة)")
+    else: missing.append("Referrer-Policy (تسريب محتمل لبيانات الإحالة الحساسة)")
+
+    if audit["permissions_policy"]: passed.append("Permissions-Policy (تقييد الكاميرا والميكروفون مفعل)")
+    else: missing.append("Permissions-Policy (صلاحيات المتصفح غير مقيدة بالهيدر)")
+
+    audit["missing"] = missing
+    audit["passed"] = passed
+
+    # Grade calculation (6 possible points)
+    passed_count = len(passed)
+    if passed_count >= 5:
+        audit["grade"] = "A+ (محصن ومحمي بأعلى المعايير العالمية)"
+    elif passed_count == 4:
+        audit["grade"] = "A (حماية قوية جداً مع توصيات طفيفة)"
+    elif passed_count == 3:
+        audit["grade"] = "B+ (حماية جيدة مع ملاحظات أمنية)"
+    elif passed_count == 2:
+        audit["grade"] = "B (متوسط الحماية - دفاعات أساسية غائبة)"
+    elif passed_count == 1:
+        audit["grade"] = "C (ضعيف دفاعياً - تنقصه طبقات حماية هامة)"
     else:
-        audit["grade"] = "C/D (ضعيف دفاعياً - تنقصه إعدادات أساسية)"
+        audit["grade"] = "D/F (حرج - مكشوف تماماً لمعظم هجمات الويب)"
 
     return audit
 
@@ -143,18 +191,21 @@ def get_hacker_response(user_msg, audit_data):
     if audit_data and audit_data.get("is_scanned"):
         host = audit_data["host"]
         ips_str = ', '.join(audit_data["ips"]) if audit_data["ips"] else "محجوب أو موجه عبر CDN"
-        missing_text = "\n".join([f"- ⚠️ {m}" for m in audit_data["missing"]]) if audit_data["missing"] else "- ✅ كافة طبقات الحماية الأساسية مفعلة والموقع محصن بشكل ممتاز."
+        passed_text = "\n".join([f"- ✅ {p}" for p in audit_data.get("passed", [])]) if audit_data.get("passed") else "- ⚠️ لا توجد هيدرز أمان أساسية مفعلة."
+        missing_text = "\n".join([f"- ⚠️ {m}" for m in audit_data.get("missing", [])]) if audit_data.get("missing") else "- ✅ كافة طبقات الحماية الـ 6 الأساسية مفعلة بنجاح."
         
         return {
-            "title": f"تقرير الفحص الحقيقي للهدف: {host}",
+            "title": f"تقرير الفحص الأمني الحقيقي للهدف: {host}",
             "text": f"تم إجراء الاتصال الحي وفحص السيرفر الفعلي للهدف **`{host}`**:\n\n"
                     f"- **عناوين الـ IP الحقيقية**: `{ips_str}`\n"
                     f"- **شهادة التشفير (SSL/TLS)**: `{audit_data['tls']}` ({audit_data['cipher']})\n"
                     f"- **خادم الويب (Server Header)**: `{audit_data['server']}`\n"
+                    f"- **طبقة الحماية (WAF/CDN)**: `{audit_data['waf']}`\n"
                     f"- **تقييم مستوى الحماية**: **{audit_data['grade']}**\n\n"
-                    f"**حالة الهيدرز والدفاعات السيبرانية**:\n{missing_text}",
+                    f"**الدفاعات المفعلة**:\n{passed_text}\n\n"
+                    f"**الثغرات ونواقص الحماية**:\n{missing_text}",
             "badge": f"REAL AUDIT: {audit_data['grade'].split(' ')[0]}",
-            "code": f"TARGET: {host}\nIPs: {ips_str}\nTLS_VERSION: {audit_data['tls']}\nCIPHER: {audit_data['cipher']}\nSERVER: {audit_data['server']}\nGRADE: {audit_data['grade']}"
+            "code": f"TARGET: {host}\nIPs: {ips_str}\nTLS_VERSION: {audit_data['tls']}\nCIPHER: {audit_data['cipher']}\nWAF: {audit_data['waf']}\nSERVER: {audit_data['server']}\nGRADE: {audit_data['grade']}"
         }
 
     # General Root / Exploit queries

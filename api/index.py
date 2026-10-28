@@ -96,7 +96,9 @@ def run_real_headers_check(url):
             "content-security-policy": "CSP (يحمي من XSS)",
             "strict-transport-security": "HSTS (إجبار التشفير)",
             "x-frame-options": "Clickjacking Defense",
-            "x-content-type-options": "MIME-Sniffing Defense"
+            "x-content-type-options": "MIME-Sniffing Defense",
+            "referrer-policy": "Referrer Privacy Defense",
+            "permissions-policy": "Browser Features Restriction"
         }
 
         missing = []
