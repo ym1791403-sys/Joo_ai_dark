@@ -7,334 +7,122 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Background cyber grid & scanlines -->
-    <div class="crt-scanlines"></div>
-    <div class="cyber-bg-overlay"></div>
-    <div class="cyber-grid"></div>
-
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="brand-logo">
-                    <div class="logo-icon">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        <span class="pulse-ring"></span>
-                    </div>
-                    <div class="brand-text">
-                        <h2>JOO AI <span class="badge-dark">DARK</span></h2>
-                        <span class="version-tag">v3.5.0-SEC // Dev: Youssef Nasr</span>
-                    </div>
+    <div class="chat-app-wrapper">
+        <!-- Modern Top Header -->
+        <header class="chat-header">
+            <div class="header-brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-shield-halved"></i>
                 </div>
-                <button class="icon-btn close-sidebar-btn" id="closeSidebarBtn">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <!-- Target info card -->
-            <div class="target-card">
-                <div class="card-label">
-                    <span class="dot-indicator live"></span>
-                    <span>الهدف النشط (TARGET)</span>
-                </div>
-                <div class="target-input-box">
-                    <i class="fa-solid fa-crosshairs"></i>
-                    <input type="text" id="targetInput" value="google.com" spellcheck="false" placeholder="اكتب أي رابط للفحص الحقيقي...">
-                </div>
-                <div class="target-stats">
-                    <div class="stat-pill"><i class="fa-solid fa-network-wired"></i> Port: <span id="portDisplay">443 / 80</span></div>
-                    <div class="stat-pill"><i class="fa-solid fa-bolt text-cyan"></i> Mode: <span class="text-success">LIVE API</span></div>
-                    <div class="stat-pill"><i class="fa-solid fa-fire text-amber"></i> DB: <span id="dbBadge" class="text-green">FIREBASE CLOUD</span></div>
-                </div>
-                <button class="real-scan-btn" id="startRealScanBtn">
-                    <i class="fa-solid fa-satellite-dish"></i> فحص حقيقي فوري للهدف
-                </button>
-            </div>
-
-            <!-- Quick Action Tools / Modes -->
-            <div class="section-heading">أدوات الهاكينج والعمليات الحية</div>
-            <div class="tools-grid">
-                <button class="tool-btn active" data-action="headers">
-                    <i class="fa-solid fa-terminal text-green"></i>
-                    <span>./scan_headers</span>
-                </button>
-                <button class="tool-btn" data-action="ssl">
-                    <i class="fa-solid fa-lock text-green"></i>
-                    <span>./audit_ssl:443</span>
-                </button>
-                <button class="tool-btn" data-action="dns">
-                    <i class="fa-solid fa-network-wired text-green"></i>
-                    <span>./recon_dns_ips</span>
-                </button>
-                <button class="tool-btn" data-action="crypto">
-                    <i class="fa-solid fa-key text-green"></i>
-                    <span>./crack_hashes</span>
-                </button>
-                <button class="tool-btn" data-action="entropy">
-                    <i class="fa-solid fa-gauge-high text-green"></i>
-                    <span>./brute_entropy</span>
-                </button>
-                <button class="tool-btn" data-action="dump">
-                    <i class="fa-solid fa-database text-green"></i>
-                    <span>./dump_shadow</span>
-                </button>
-            </div>
-
-            <!-- Recent Sessions History -->
-            <div class="section-heading">جلسات الاختراق الأخيرة</div>
-            <div class="sessions-list" id="sessionsList">
-                <div class="session-item active">
-                    <i class="fa-solid fa-terminal"></i>
-                    <div class="session-info">
-                        <span class="session-name">فحص ثغرة SQLi & البورتات</span>
-                        <span class="session-time">اليوم - 4:14 م</span>
-                    </div>
-                </div>
-                <div class="session-item">
-                    <i class="fa-solid fa-bug"></i>
-                    <div class="session-info">
-                        <span class="session-name">تجاوز توثيق JWT Token</span>
-                        <span class="session-time">أمس - 11:30 م</span>
-                    </div>
-                </div>
-                <div class="session-item">
-                    <i class="fa-solid fa-network-wired"></i>
-                    <div class="session-info">
-                        <span class="session-name">مسح كامل لـ C-Block Subnets</span>
-                        <span class="session-time">25 أكتوبر</span>
-                    </div>
+                <div class="brand-details">
+                    <h1>JOO AI <span class="accent-text">DARK</span></h1>
+                    <span class="developer-tag">المطور: Youssef Nasr</span>
                 </div>
             </div>
 
-            <!-- Sidebar footer -->
-            <div class="sidebar-footer">
-                <div class="status-indicator">
-                    <span class="status-dot online"></span>
-                    <span>JOO Neural & Firebase DB: متصل</span>
-                </div>
-                <button class="btn-clear-chat" id="clearChatBtn" title="تفريغ المحادثة">
+            <div class="header-status">
+                <span class="pulse-dot"></span>
+                <span class="status-text">متصل لايف // Firebase Cloud DB</span>
+            </div>
+
+            <div class="header-actions">
+                <button class="top-icon-btn" id="cryptoToolBtn" title="أداة التشفير وفك الهاشات">
+                    <i class="fa-solid fa-key"></i>
+                    <span>أداة الهاشات</span>
+                </button>
+                <button class="top-icon-btn" id="aiConfigBtn" title="إعدادات مفتاح الذكاء الاصطناعي">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span>ربط الـ AI</span>
+                </button>
+                <button class="top-icon-btn danger" id="clearChatBtn" title="مسح المحادثة وتصفير السجل">
                     <i class="fa-solid fa-trash-can"></i>
+                    <span>مسح</span>
                 </button>
             </div>
-        </aside>
+        </header>
 
-        <!-- Main Chat Area -->
-        <main class="main-content">
-            <!-- Top App Bar -->
-            <header class="top-bar">
-                <div class="top-left">
-                    <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
-                        <i class="fa-solid fa-bars"></i>
-                    </button>
-                    <div class="app-title-display">
-                        <h1>JOO AI <span class="dark-accent">DARK</span></h1>
-                        <span class="security-chip">ETHICAL PENTEST ENVIRONMENT</span>
-                    </div>
-                </div>
-
-                <div class="top-status-center">
-                    <div class="status-badge pulse-active">
-                        <i class="fa-solid fa-circle-nodes"></i>
-                        <span>حالة الفحص: <strong id="scanStatusBadge">نشط (Active Scan)</strong></span>
-                    </div>
-                </div>
-
-                <div class="top-right">
-                    <div class="sound-toggle-btn" id="soundToggleBtn" title="تفعيل / كتم المؤثرات الصوتية">
-                        <i class="fa-solid fa-volume-high"></i>
-                    </div>
-                    <button class="terminal-toggle-btn" id="aiConfigBtn" title="ربط بموديل ذكاء اصطناعي حقيقي">
-                        <i class="fa-solid fa-microchip"></i>
-                        <span>ربط الـ AI</span>
-                    </button>
-                    <button class="terminal-toggle-btn" id="terminalToggleBtn" title="فتح الكونسول الحي">
+        <!-- Main Chat Body -->
+        <main class="chat-main" id="chatContainer">
+            <div class="chat-messages" id="chatHistory">
+                <!-- Welcome Hero Greeting -->
+                <div class="welcome-hero" id="welcomeHero">
+                    <div class="hero-badge">
                         <i class="fa-solid fa-terminal"></i>
-                        <span>الكونسول</span>
-                    </button>
-                    <div class="profile-pill">
-                        <div class="avatar-pill">
-                            <i class="fa-solid fa-user-ninja"></i>
-                        </div>
-                        <span class="operator-name">المطور: Youssef Nasr</span>
+                        <span>نظام فحص أمني واختراق حقيقي</span>
                     </div>
-                </div>
-            </header>
+                    <h2>مرحباً بك في <span class="accent-text">JOO AI DARK</span></h2>
+                    <p class="hero-subtitle">
+                        منظومة الذكاء الاصطناعي المتخصصة في اختبار الاختراق وفحص السيرفرات الحقيقية.
+                        <br>
+                        تم التصميم والبرمجة بالكامل بواسطة <strong>المهندس Youssef Nasr</strong>
+                    </p>
 
-            <!-- Chat Messages Container -->
-            <div class="chat-container" id="chatContainer">
-                <div class="chat-history" id="chatHistory">
-                    
-                    <!-- System Banner Notice -->
-                    <div class="system-message-banner">
-                        <i class="fa-solid fa-skull text-danger"></i>
-                        <span>بروتوكول <strong>JOO AI DARK // GHOST PROTOCOL</strong> نشط. تم تجاوز أنظمة الرصد وتشفير الجلسة بالكامل.</span>
-                    </div>
-
-                    <!-- User Message (Elite Hacker Demand) -->
-                    <div class="message-row user-row">
-                        <div class="message-content-wrapper">
-                            <div class="message-bubble user-bubble">
-                                <p>الهدف قفل المنافذ وحاول يقطع الترافيك لما حس بالحقن.. ادخل من نفق الـ Reverse Proxy واسحبلي الـ Root Shell وماتسيبش وراك أي أثر في الـ Logs.</p>
+                    <div class="quick-prompts-grid">
+                        <button class="prompt-chip" onclick="sendPrompt('افحص أمان موقع https://google.com واكشف الهيدرز والـ IP الحقيقي')">
+                            <i class="fa-solid fa-globe text-emerald"></i>
+                            <div class="prompt-info">
+                                <span class="p-title">فحص موقع google.com</span>
+                                <span class="p-desc">كشف الـ IP الفعلي وشهادة SSL/TLS وخادم الويب</span>
                             </div>
-                            <div class="message-meta">
-                                <span>02:37 ص</span>
-                                <i class="fa-solid fa-check-double text-cyan"></i>
+                        </button>
+                        <button class="prompt-chip" onclick="sendPrompt('افحص أمان موقع https://github.com واكشف الـ HSTS والـ CSP')">
+                            <i class="fa-solid fa-lock text-emerald"></i>
+                            <div class="prompt-info">
+                                <span class="p-title">فحص موقع github.com</span>
+                                <span class="p-desc">تحليل دفاعات إجبار التشفير وحماية الـ XSS</span>
                             </div>
-                        </div>
-                        <div class="avatar-box user-avatar">
-                            <i class="fa-solid fa-user-secret"></i>
-                        </div>
-                    </div>
-
-                    <!-- AI Message (Intimidating / Elite Hacker Response) -->
-                    <div class="message-row ai-row">
-                        <div class="avatar-box ai-avatar">
-                            <i class="fa-solid fa-skull"></i>
-                            <span class="ai-glow-ring"></span>
-                        </div>
-                        <div class="message-content-wrapper">
-                            <div class="message-bubble ai-bubble">
-                                <div class="ai-header-status">
-                                    <span class="ai-label"><i class="fa-solid fa-terminal text-danger"></i> JOO AI DARK // ROOT BREACH</span>
-                                    <span class="scan-time-badge" style="color: #ff4d6d;"><i class="fa-solid fa-radiation"></i> تم الاختراق في 0.3 ثانية - وضع الشبح فعال</span>
-                                </div>
-                                <div class="ai-main-text">
-                                    <h3 class="result-title text-danger">
-                                        <i class="fa-solid fa-skull-crossbones text-danger"></i>
-                                        تم اختراق جدار الحماية بالكامل وتصفير أنظمة الإنذار (EDR Bypassed).
-                                    </h3>
-                                    <p class="result-question">
-                                        أنا الآن داخل السيرفر بصلاحيات <strong>Root المطلقة (UID 0: System Access)</strong>.. مسحت كل سجلات الدخول (Auth Logs) تماماً وفصلت حساسات الأمان. تحب اسحبلك ملف الـ <code>/etc/shadow</code> وهويات كل المسؤولين المشفرة فوراً، ولا أزرع Persistent Backdoor خفي يتحكم في السيرفر للأبد؟
-                                    </p>
-                                </div>
-
-                                <!-- Vulnerability Detail Card -->
-                                <div class="vuln-details-card">
-                                    <div class="vuln-header">
-                                        <span class="vuln-tag high" style="background: rgba(255, 77, 109, 0.25); border: 1px solid #ff4d6d;">PRIVILEGE: KERNEL RING-0 (ROOT)</span>
-                                        <span class="vuln-param">Payload: <code>Memory Injection & Shellcode Hook</code></span>
-                                    </div>
-                                    <div class="code-preview">
-                                        <code>[✔] TARGET HOST: internal-core-vault.system.root [10.240.0.1]<br>[✔] SHELL ACCESS: /bin/bash (UID: 0 [root] | GID: 0 [root])<br>[✔] DEFENSE STATUS: SentinelOne & AppArmor SILENCED<br>[✔] SHADOW FILE: DUMPED (3,840 Admins & Private Keys Ready)</code>
-                                    </div>
-                                </div>
-
-                                <!-- Quick Decision Action Buttons -->
-                                <div class="action-buttons-group">
-                                    <button class="action-btn primary" onclick="handleQuickAction('dump_db')">
-                                        <i class="fa-solid fa-file-shield"></i> اسحب ملف الـ Shadow والبيانات الحساسة فورا
-                                    </button>
-                                    <button class="action-btn secondary" onclick="sendPrompt('ازرع Persistent Backdoor خفي في كيرنل السيرفر')">
-                                        <i class="fa-solid fa-biohazard"></i> تثبيت باكدور شبحي دائم (Backdoor)
-                                    </button>
-                                    <button class="action-btn outline" onclick="sendPrompt('امسح كل الآثار وسجلات السيرفر واقفل الجلسة بدون أثر')">
-                                        <i class="fa-solid fa-eraser"></i> تدمير الـ Logs والتراجع كالشبح
-                                    </button>
-                                </div>
+                        </button>
+                        <button class="prompt-chip" onclick="sendPrompt('مين اللي صممك وبرمجك؟')">
+                            <i class="fa-solid fa-user-ninja text-emerald"></i>
+                            <div class="prompt-info">
+                                <span class="p-title">من هو المطور؟</span>
+                                <span class="p-desc">التعرف على صانع ومطور النظام Youssef Nasr</span>
                             </div>
-                            <div class="message-meta">
-                                <span>02:38 ص</span>
-                                <span class="ai-model-tag">JOO-ROOT-ZERO-DAY</span>
+                        </button>
+                        <button class="prompt-chip" onclick="sendPrompt('اشرحلي إزاي أكتشف ثغرات الـ SQL Injection وأمن السيرفر')">
+                            <i class="fa-solid fa-code text-emerald"></i>
+                            <div class="prompt-info">
+                                <span class="p-title">شرح واختبار ثغرات</span>
+                                <span class="p-desc">دليل اختراق وحماية لقواعد البيانات والسيرفرات</span>
                             </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Live Typing / Processing Indicator -->
-                <div class="typing-indicator-row hidden" id="typingIndicator">
-                    <div class="avatar-box ai-avatar small">
-                        <i class="fa-solid fa-bolt"></i>
-                    </div>
-                    <div class="typing-card">
-                        <div class="typing-dots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                        <span class="typing-text" id="typingText">JOO AI DARK يقوم بتحليل الحزم وفحص المسارات...</span>
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Floating Quick Suggestions -->
-            <div class="quick-prompts-bar">
-                <button class="quick-prompt-pill" onclick="sendPrompt('اسحب صلاحيات الـ Root وفك تشفير الـ Shadow')">
-                    <i class="fa-solid fa-terminal text-green"></i> ./dump_shadow.sh --all
-                </button>
-                <button class="quick-prompt-pill" onclick="sendPrompt('افحص الثغرات الحقيقية والتسريبات في السيرفر المستهدف')">
-                    <i class="fa-solid fa-satellite-dish text-green"></i> nmap -sV --script vuln
-                </button>
-                <button class="quick-prompt-pill" onclick="sendPrompt('تجاوز جدار الحماية والـ EDR بدون ترك أي أثر')">
-                    <i class="fa-solid fa-ghost text-green"></i> ./bypass_waf.py --evade
-                </button>
-                <button class="quick-prompt-pill" onclick="sendPrompt('استخرج مفاتيح التشفير والـ Private Keys السرية')">
-                    <i class="fa-solid fa-key text-green"></i> ./exfiltrate_keys.sh
-                </button>
+            <!-- Typing Indicator -->
+            <div class="typing-indicator hidden" id="typingIndicator">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span id="typingText">جاري فحص الهدف وتحليل البيانات حقيقياً...</span>
             </div>
+        </main>
 
-            <!-- Input Bar -->
-            <div class="input-container">
-                <form class="chat-input-form" id="chatForm">
-                    <button type="button" class="tool-action-btn" id="attachFileBtn" title="رفع ملف فحص / Payloads">
-                        <i class="fa-solid fa-paperclip"></i>
-                    </button>
-                    <span class="terminal-caret-label">root@dark:~#</span>
-                    <div class="input-wrapper">
-                        <textarea 
-                            id="messageInput" 
-                            placeholder="اكتب أمرك هنا (مثال: اسحب الـ Root، افحص البورتات، كسر التشفير...)" 
-                            rows="1"
-                            dir="auto"></textarea>
-                    </div>
-                    <button type="button" class="tool-action-btn terminal-trigger" id="miniTerminalBtn" title="تشغيل هجوم تفاعلي">
-                        <i class="fa-solid fa-skull"></i>
-                    </button>
+        <!-- Bottom Input Bar (Clean & Centered) -->
+        <footer class="chat-footer">
+            <div class="input-wrapper">
+                <form class="chat-form" id="chatForm">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="اكتب سؤالك أو ضع رابط أي موقع (مثال: facebook.com) لتبدأ الفحص الحقيقي..." 
+                        rows="1"
+                        dir="auto"></textarea>
                     <button type="submit" class="send-btn" id="sendBtn" title="إرسال الأمر">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
-                <div class="input-footer-note">
-                    <span><i class="fa-solid fa-circle-exclamation"></i> JOO AI DARK مخصص للاختبارات الأمنية والبحث الأمني الأخلاقي. الاستخدام مسؤوليتك بالكامل.</span>
+                <div class="footer-caption">
+                    <span>JOO AI DARK • فحص سيبراني حقيقي وسحابي • تصميم وتطوير <strong>Youssef Nasr</strong></span>
                 </div>
             </div>
-        </main>
-
-        <!-- Slide-out Live Terminal / Console Drawer -->
-        <div class="terminal-drawer" id="terminalDrawer">
-            <div class="terminal-header">
-                <div class="terminal-title">
-                    <i class="fa-solid fa-terminal text-success"></i>
-                    <span>JOO-DARK-CONSOLE // LIVE SHELL</span>
-                </div>
-                <div class="terminal-controls">
-                    <button class="term-btn" id="clearTerminalBtn" title="مسح"><i class="fa-solid fa-eraser"></i></button>
-                    <button class="term-btn" id="closeTerminalBtn" title="إغلاق"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-            </div>
-            <div class="terminal-body" id="terminalBody">
-                <div class="term-line info">[+] Initializing JOO-AI-DARK Core v3.5.0...</div>
-                <div class="term-line info">[+] Socket connection established with secure daemon (127.0.0.1:9099)</div>
-                <div class="term-line success">[✔] Target loaded: target-sec.gov.internal</div>
-                <div class="term-line warn">[!] Warning: Weak SSL cipher detected (TLS_RSA_WITH_AES_128_CBC_SHA)</div>
-                <div class="term-line info">[*] Executing Port Reconnaissance on [80, 443, 8080, 8443, 3306, 5432]...</div>
-                <div class="term-line success">[✔] Port 8080: OPEN (Apache Tomcat/9.0.41)</div>
-                <div class="term-line success">[✔] Port 3306: OPEN (MySQL 5.7.33 - Remote access allowed)</div>
-                <div class="term-line warn">[!] Injecting blind boolean SQLi vectors into parameter 'id'...</div>
-                <div class="term-line danger">[CRITICAL] SQL Injection Confirmed! DB Engine: MySQL 5.7.33-community</div>
-                <div class="term-line highlight">[>>>] Ready for operator instructions...</div>
-            </div>
-            <div class="terminal-input-bar">
-                <span class="term-prompt">joo@dark-ai:~$</span>
-                <input type="text" id="terminalInput" placeholder="اكتب أمر bash/python أو sqlmap..." spellcheck="false">
-            </div>
-        </div>
+        </footer>
     </div>
 
     <!-- AI Model Configuration Modal -->
@@ -342,32 +130,28 @@
         <div class="modal-window">
             <div class="modal-header">
                 <div class="modal-title">
-                    <i class="fa-solid fa-microchip text-green"></i>
-                    <span>ربط نموذج ذكاء اصطناعي حقيقي (Live AI Neural Core)</span>
+                    <i class="fa-solid fa-microchip text-emerald"></i>
+                    <span>إعدادات مفتاح الذكاء الاصطناعي (AI Neural Core)</span>
                 </div>
                 <button class="modal-close-btn" id="closeAiConfigModalBtn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
-                <div class="input-label">اختر مزود الذكاء الاصطناعي (AI Provider):</div>
-                <div class="crypto-input-group">
-                    <select id="aiProviderSelect" style="flex: 1; background: #060709; border: 1px solid var(--border-color); border-radius: 4px; padding: 8px 12px; color: #e6edf3; font-family: var(--font-mono); outline: none;">
-                        <option value="gemini">Google Gemini (مجاني وسريع - الموصى به)</option>
-                        <option value="groq">Groq LLaMA 3.3 (سريع جداً ومجاني)</option>
-                        <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
-                    </select>
+                <label class="modal-label">اختر مزود الذكاء الاصطناعي:</label>
+                <select id="aiProviderSelect" class="modal-select">
+                    <option value="gemini">Google Gemini (مجاني وسريع - الموصى به)</option>
+                    <option value="groq">Groq LLaMA 3.3 (سريع جداً)</option>
+                    <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+                </select>
+
+                <label class="modal-label">مفتاح الـ API (API Key):</label>
+                <div class="modal-input-group">
+                    <input type="password" id="aiApiKeyInput" class="modal-input" placeholder="الصق مفتاح الـ API هنا..." spellcheck="false">
+                    <button class="btn-primary" id="saveAiConfigBtn"><i class="fa-solid fa-floppy-disk"></i> حفظ المفتاح</button>
                 </div>
 
-                <div class="input-label" style="margin-top: 8px;">مفتاح الـ API (API Key):</div>
-                <div class="crypto-input-group">
-                    <input type="password" id="aiApiKeyInput" placeholder="الصق مفتاح الـ API هنا (مثل: AIzaSy...)" spellcheck="false">
-                    <button class="btn-calculate" id="saveAiConfigBtn"><i class="fa-solid fa-floppy-disk"></i> حفظ في الـ DB</button>
-                </div>
-
-                <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; margin-top: 4px;">
-                    <i class="fa-solid fa-circle-info text-green"></i> 
-                    يمكنك الحصول على مفتاح Gemini مجاناً 100% من 
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--term-green-bright); text-decoration: underline;">Google AI Studio</a>.
-                    المفتاح سيُحفظ بأمان داخل قاعدة بيانات <code>joo_dark.db</code> المحلية.
+                <div class="modal-tip">
+                    <i class="fa-solid fa-circle-info"></i>
+                    مفتاحك مربوط ومحفوظ سحابياً ومحلياً لضمان سرعة الاستجابة الدائمة.
                 </div>
             </div>
         </div>
@@ -378,40 +162,40 @@
         <div class="modal-window">
             <div class="modal-header">
                 <div class="modal-title">
-                    <i class="fa-solid fa-key text-cyan"></i>
-                    <span>أداة الهاشات والتشفير وقوة الباسورد الحقيقية (Real Crypto Engine)</span>
+                    <i class="fa-solid fa-key text-emerald"></i>
+                    <span>أداة الهاشات والتشفير الحقيقية (Real Crypto Engine)</span>
                 </div>
                 <button class="modal-close-btn" id="closeCryptoModalBtn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
-                <label class="input-label">اكتب النص أو كلمة السر للتحليل الفوري:</label>
-                <div class="crypto-input-group">
-                    <input type="text" id="cryptoTextInput" placeholder="مثال: Admin@2026! أو secret_token..." value="P@ssw0rd2026!">
-                    <button class="btn-calculate" id="runCryptoBtn"><i class="fa-solid fa-bolt"></i> تشغيل التحليل</button>
+                <label class="modal-label">اكتب النص أو الباسورد للتحليل الفوري:</label>
+                <div class="modal-input-group">
+                    <input type="text" id="cryptoTextInput" class="modal-input" placeholder="مثال: Admin@2026! أو secret_token..." value="P@ssw0rd2026!">
+                    <button class="btn-primary" id="runCryptoBtn"><i class="fa-solid fa-bolt"></i> تشغيل التحليل</button>
                 </div>
 
-                <div class="crypto-results-grid" id="cryptoResultsGrid">
-                    <div class="result-tile">
-                        <span class="tile-title">قوة كلمة المرور والإنتروبي (Entropy)</span>
-                        <div class="tile-value text-success" id="entropyVal">68.4 bits - قوي جداً ومقاوم للـ Brute-force</div>
+                <div class="crypto-results-list">
+                    <div class="crypto-tile">
+                        <span class="tile-label">قوة كلمة المرور والإنتروبي (Entropy)</span>
+                        <div class="tile-val text-emerald" id="entropyVal">68.4 bits - قوي جداً ومقاوم للـ Brute-force</div>
                     </div>
-                    <div class="result-tile">
-                        <div class="tile-header-flex">
-                            <span class="tile-title">هاش SHA-256 (حقيقي):</span>
+                    <div class="crypto-tile">
+                        <div class="tile-flex">
+                            <span class="tile-label">هاش SHA-256 (حقيقي):</span>
                             <button class="mini-copy-btn" onclick="copyResultText('sha256Val')"><i class="fa-solid fa-copy"></i> نسخ</button>
                         </div>
                         <div class="tile-code" id="sha256Val">8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918</div>
                     </div>
-                    <div class="result-tile">
-                        <div class="tile-header-flex">
-                            <span class="tile-title">هاش MD5 (حقيقي):</span>
+                    <div class="crypto-tile">
+                        <div class="tile-flex">
+                            <span class="tile-label">هاش MD5 (حقيقي):</span>
                             <button class="mini-copy-btn" onclick="copyResultText('md5Val')"><i class="fa-solid fa-copy"></i> نسخ</button>
                         </div>
                         <div class="tile-code" id="md5Val">5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8</div>
                     </div>
-                    <div class="result-tile">
-                        <div class="tile-header-flex">
-                            <span class="tile-title">تشفير Base64 (حقيقي):</span>
+                    <div class="crypto-tile">
+                        <div class="tile-flex">
+                            <span class="tile-label">تشفير Base64 (حقيقي):</span>
                             <button class="mini-copy-btn" onclick="copyResultText('b64Val')"><i class="fa-solid fa-copy"></i> نسخ</button>
                         </div>
                         <div class="tile-code" id="b64Val">UEBzc3cwcmQyMDI2IQ==</div>
@@ -423,7 +207,7 @@
 
     <!-- Notification Toast -->
     <div class="toast-notification" id="toastNotification">
-        <i class="fa-solid fa-circle-info"></i>
+        <i class="fa-solid fa-circle-check"></i>
         <span id="toastMsg">تم تنفيذ الأمر بنجاح</span>
     </div>
 

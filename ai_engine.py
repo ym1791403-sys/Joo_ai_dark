@@ -36,9 +36,28 @@ CANDIDATE_GEMINI_MODELS = [
     'gemini-flash-latest'
 ]
 
-def call_gemini_api(api_key, user_message, target_host=""):
-    """Queries Gemini API with automated multi-model fallback"""
-    prompt_context = f"[Target Host: {target_host}]\nOperator Instruction: {user_message}"
+def call_gemini_api(api_key, user_message, target_host="", live_audit=None):
+    """Queries Gemini API with automated multi-model fallback and real audit telemetry"""
+    audit_context = ""
+    if live_audit and live_audit.get("is_scanned"):
+        ips_str = ', '.join(live_audit.get('ips', [])) or 'CDN / Cloud Proxy'
+        missing_str = ', '.join(live_audit.get('missing', [])) or 'None (All standard defense headers active)'
+        audit_context = (
+            f"\n\n[REAL LIVE TELEMETRY MEASUREMENTS FOR {live_audit['host']}]:\n"
+            f"- Resolved IPs: {ips_str}\n"
+            f"- SSL/TLS Handshake: {live_audit.get('tls')} ({live_audit.get('cipher')})\n"
+            f"- Server Header: {live_audit.get('server')}\n"
+            f"- HSTS Enforced: {live_audit.get('hsts')}\n"
+            f"- CSP Header: {live_audit.get('csp')}\n"
+            f"- X-Frame Protection: {live_audit.get('x_frame')}\n"
+            f"- Actual Security Grade: {live_audit.get('grade')}\n"
+            f"- Missing Defenses: {missing_str}\n\n"
+            f"STRICT ACCURACY INSTRUCTION: Base your cybersecurity review on these REAL measured data points. "
+            f"If the target has strong defenses (e.g. Google, GitHub, Cloudflare), state its actual security strengths. "
+            f"Do not invent fake open ports or fake weaknesses if they don't exist."
+        )
+
+    prompt_context = f"[Target Context: {target_host}]\nOperator Instruction: {user_message}{audit_context}"
     
     payload = {
         "contents": [
@@ -109,10 +128,10 @@ def call_openai_compatible_api(api_key, base_url, model_name, user_message, targ
             return choices[0]['message'].get('content', '')
         return "لم يتم استلام محتوى من النموذج."
 
-def generate_ai_hacker_response(user_message, target_host="", explicit_key=None, explicit_provider=None):
+def generate_ai_hacker_response(user_message, target_host="", live_audit=None, explicit_key=None, explicit_provider=None):
     """
     Checks if a real AI API key is configured.
-    If configured, queries the real LLM.
+    If configured, queries the real LLM with live audit telemetry.
     Otherwise, returns None to let the built-in local cyber engine handle it.
     """
     provider = explicit_provider or database.get_setting('ai_provider', 'gemini')
@@ -122,13 +141,16 @@ def generate_ai_hacker_response(user_message, target_host="", explicit_key=None,
 
     try:
         if provider == 'gemini' and gemini_key:
-            reply_text, model_used = call_gemini_api(gemini_key, user_message, target_host)
+            reply_text, model_used = call_gemini_api(gemini_key, user_message, target_host, live_audit=live_audit)
             if reply_text:
+                badge_title = f"LIVE AI: {model_used.upper()}"
+                if live_audit and live_audit.get("is_scanned"):
+                    badge_title = f"REAL AUDIT // {live_audit.get('grade', 'B').split(' ')[0]}"
                 return {
                     "title": f"JOO AI DARK // {model_used.upper()} NEURAL CORE",
                     "text": reply_text,
-                    "badge": f"LIVE AI: {model_used.upper()}",
-                    "code": f"TARGET: {target_host}\nMODEL: {model_used}\nSTATUS: 200 OK (CONNECTED)"
+                    "badge": badge_title,
+                    "code": f"TARGET: {target_host}\nMODEL: {model_used}\nSTATUS: 200 OK (LIVE)"
                 }
 
         elif provider == 'groq' and groq_key:

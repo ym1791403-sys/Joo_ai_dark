@@ -249,7 +249,16 @@ class handler(BaseHTTPRequestHandler):
         # Smart Route: Chat request
         if url_path == '/api/chat' or 'message' in req_json:
             user_msg = req_json.get('message', '').strip()
-            target = req_json.get('target', 'google.com').strip()
+            target = req_json.get('target', '').strip()
+            
+            # Detect target domain directly from message if present
+            import re
+            m = re.search(r'(https?://[^\s/$.?#].[^\s]*|[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:/[^\s]*)?)', user_msg)
+            if m:
+                target = m.group(1).rstrip('.,;:!?')
+            elif not target:
+                target = 'google.com'
+
             client_api_key = req_json.get('api_key')
             client_provider = req_json.get('ai_provider')
 
