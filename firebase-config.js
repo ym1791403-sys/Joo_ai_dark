@@ -14,6 +14,7 @@ const _FB_KEY_B64 = "QUl6YVN5Q2RmWmtzMjNmNDBHTVZVbTA0QnJnOWUzbXNLUklSdkE4";
 const firebaseConfig = {
   apiKey: atob(_FB_KEY_B64),
   authDomain: "joo-ai-dark.firebaseapp.com",
+  databaseURL: "https://joo-ai-dark-default-rtdb.firebaseio.com",
   projectId: "joo-ai-dark",
   storageBucket: "joo-ai-dark.firebasestorage.app",
   messagingSenderId: "243101543707",
@@ -23,25 +24,41 @@ const firebaseConfig = {
 
 let jooFirebaseApp = null;
 let jooFirestoreDb = null;
+let jooRtdb = null;
 let jooAnalytics = null;
 let isFirebaseConnected = false;
 
 try {
   if (typeof firebase !== 'undefined') {
     jooFirebaseApp = firebase.initializeApp(firebaseConfig);
-    jooFirestoreDb = firebase.firestore();
+    
+    // 1. Initialize Firestore if available
+    try {
+      if (firebase.firestore) {
+        jooFirestoreDb = firebase.firestore();
+      }
+    } catch (fErr) {
+      console.warn("[-] Firestore init skipped:", fErr.message);
+    }
+
+    // 2. Initialize Realtime Database if available
+    try {
+      if (firebase.database) {
+        jooRtdb = firebase.database();
+      }
+    } catch (rErr) {
+      console.warn("[-] Realtime DB init skipped:", rErr.message);
+    }
     
     // Optional Analytics
     try {
       if (firebase.analytics) {
         jooAnalytics = firebase.analytics();
       }
-    } catch (aErr) {
-      console.warn("[*] Firebase analytics not active in this environment.");
-    }
+    } catch (aErr) {}
 
-    isFirebaseConnected = true;
-    console.log("[✔] Firebase Cloud Database (Firestore) initialized successfully for JOO AI DARK.");
+    isFirebaseConnected = !!(jooFirestoreDb || jooRtdb);
+    console.log("[✔] Firebase Cloud Intelligence connected (Firestore & Realtime Database Ready).");
   } else {
     console.warn("[-] Firebase SDK scripts not loaded yet.");
   }
@@ -53,98 +70,150 @@ try {
 window.JooFirebase = {
   app: jooFirebaseApp,
   db: jooFirestoreDb,
-  isConnected: () => isFirebaseConnected && !!jooFirestoreDb,
+  rtdb: jooRtdb,
+  isConnected: () => isFirebaseConnected && !!(jooFirestoreDb || jooRtdb),
 
   /**
-   * Save a chat message to Firestore collection: joo_chat_history
+   * Save a chat message to Firebase (supports Realtime Database & Firestore)
    */
   async saveMessage(msgObj) {
-    if (!jooFirestoreDb) return false;
-    try {
-      const payload = {
-        role: msgObj.role || 'user',
-        message: msgObj.message || '',
-        title: msgObj.title || '',
-        badge: msgObj.badge || '',
-        code: msgObj.code || '',
-        target: msgObj.target || 'google.com',
-        created_at: msgObj.created_at || new Date().toLocaleTimeString(),
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      const docRef = await jooFirestoreDb.collection('joo_chat_history').add(payload);
-      console.log(`[✔] Message successfully synced to Firebase: ${docRef.id}`);
-      return docRef.id;
-    } catch (err) {
-      console.warn("[-] Firebase Firestore saveMessage error:", err.message);
-      return false;
+    const payload = {
+      role: msgObj.role || 'user',
+      message: msgObj.message || '',
+      title: msgObj.title || '',
+      badge: msgObj.badge || '',
+      code: msgObj.code || '',
+      target: msgObj.target || 'direct',
+      created_at: msgObj.created_at || new Date().toLocaleTimeString(),
+      timestamp: Date.now()
+    };
+
+    let saved = false;
+
+    // Realtime Database sync
+    if (jooRtdb) {
+      try {
+        const newRef = jooRtdb.ref('joo_chat_history').push();
+        await newRef.set(payload);
+        console.log(`[✔] Message synced to Realtime Database: ${newRef.key}`);
+        saved = true;
+      } catch (err) {
+        console.warn("[-] Realtime DB save error:", err.message);
+      }
     }
+
+    // Firestore sync
+    if (jooFirestoreDb) {
+      try {
+        const docRef = await jooFirestoreDb.collection('joo_chat_history').add({
+          ...payload,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        console.log(`[✔] Message synced to Firestore: ${docRef.id}`);
+        saved = true;
+      } catch (err) {
+        console.warn("[-] Firestore save error:", err.message);
+      }
+    }
+
+    return saved;
   },
 
   /**
-   * Save security scan results to Firestore collection: joo_scans
+   * Save security scan results to Firebase
    */
   async saveScan(scanObj) {
-    if (!jooFirestoreDb) return false;
-    try {
-      const payload = {
-        target: scanObj.target || '',
-        host: scanObj.host || '',
-        risk_grade: scanObj.risk_grade || 'B',
-        raw_data: JSON.stringify(scanObj.data || {}),
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        scanned_at: new Date().toISOString()
-      };
-      const docRef = await jooFirestoreDb.collection('joo_scans').add(payload);
-      console.log(`[✔] Scan result synced to Firebase: ${docRef.id}`);
-      return docRef.id;
-    } catch (err) {
-      console.warn("[-] Firebase Firestore saveScan error:", err.message);
-      return false;
+    const payload = {
+      target: scanObj.target || '',
+      host: scanObj.host || '',
+      risk_grade: scanObj.risk_grade || 'B',
+      raw_data: JSON.stringify(scanObj.data || {}),
+      scanned_at: new Date().toISOString(),
+      timestamp: Date.now()
+    };
+
+    let saved = false;
+
+    if (jooRtdb) {
+      try {
+        const newRef = jooRtdb.ref('joo_scans').push();
+        await newRef.set(payload);
+        saved = true;
+      } catch (err) {}
     }
+
+    if (jooFirestoreDb) {
+      try {
+        await jooFirestoreDb.collection('joo_scans').add(payload);
+        saved = true;
+      } catch (err) {}
+    }
+
+    return saved;
   },
 
   /**
-   * Retrieve recent conversation history from Firestore
+   * Retrieve recent conversation history from Firebase
    */
   async getRecentMessages(limit = 40) {
-    if (!jooFirestoreDb) return null;
-    try {
-      const snapshot = await jooFirestoreDb.collection('joo_chat_history')
-        .orderBy('timestamp', 'asc')
-        .limitToLast(limit)
-        .get();
-
-      if (snapshot.empty) return [];
-
-      const list = [];
-      snapshot.forEach(doc => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      return list;
-    } catch (err) {
-      console.warn("[-] Firebase Firestore fetch history error:", err.message);
-      return null;
+    // 1. Try Realtime Database first if available
+    if (jooRtdb) {
+      try {
+        const snapshot = await jooRtdb.ref('joo_chat_history').limitToLast(limit).once('value');
+        if (snapshot.exists()) {
+          const list = [];
+          snapshot.forEach(child => {
+            list.push({ id: child.key, ...child.val() });
+          });
+          return list;
+        }
+      } catch (err) {
+        console.warn("[-] Realtime DB fetch error:", err.message);
+      }
     }
+
+    // 2. Fallback to Firestore
+    if (jooFirestoreDb) {
+      try {
+        const snapshot = await jooFirestoreDb.collection('joo_chat_history')
+          .orderBy('timestamp', 'asc')
+          .limitToLast(limit)
+          .get();
+
+        if (!snapshot.empty) {
+          const list = [];
+          snapshot.forEach(doc => {
+            list.push({ id: doc.id, ...doc.data() });
+          });
+          return list;
+        }
+      } catch (err) {
+        console.warn("[-] Firestore fetch error:", err.message);
+      }
+    }
+
+    return null;
   },
 
   /**
-   * Clear all messages in Firestore
+   * Clear all messages in Firebase
    */
   async clearChatHistory() {
-    if (!jooFirestoreDb) return false;
-    try {
-      const snapshot = await jooFirestoreDb.collection('joo_chat_history').limit(100).get();
-      if (snapshot.empty) return true;
-      const batch = jooFirestoreDb.batch();
-      snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-      console.log("[✔] Firebase Firestore chat history wiped.");
-      return true;
-    } catch (err) {
-      console.warn("[-] Firebase Firestore clearChatHistory error:", err.message);
-      return false;
+    if (jooRtdb) {
+      try {
+        await jooRtdb.ref('joo_chat_history').remove();
+        console.log("[✔] Realtime Database chat history wiped.");
+      } catch (err) {}
     }
+    if (jooFirestoreDb) {
+      try {
+        const snapshot = await jooFirestoreDb.collection('joo_chat_history').limit(100).get();
+        const batch = jooFirestoreDb.batch();
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        console.log("[✔] Firestore chat history wiped.");
+      } catch (err) {}
+    }
+    return true;
   }
 };
