@@ -192,6 +192,7 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         url_path = self.path.split('?')[0]
         
+        # 1. API Endpoints
         if url_path == '/api/history':
             history = database.get_recent_messages(limit=50)
             self._send_json(history)
@@ -207,7 +208,30 @@ class handler(BaseHTTPRequestHandler):
             self._send_json(settings_data)
             return
 
+        # 2. Serve Static Assets if routed to serverless function
+        if url_path in ['/', '/index.html']:
+            self._serve_file(os.path.join(ROOT_DIR, 'index.html'), 'text/html; charset=utf-8')
+            return
+        elif url_path == '/style.css':
+            self._serve_file(os.path.join(ROOT_DIR, 'style.css'), 'text/css; charset=utf-8')
+            return
+        elif url_path == '/app.js':
+            self._serve_file(os.path.join(ROOT_DIR, 'app.js'), 'application/javascript; charset=utf-8')
+            return
+
         self._send_json({"status": "active", "platform": "vercel"})
+
+    def _serve_file(self, filepath, content_type):
+        if os.path.exists(filepath):
+            with open(filepath, 'rb') as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+        else:
+            self.send_error(404, "File not found")
 
     def do_POST(self):
         url_path = self.path.split('?')[0]
