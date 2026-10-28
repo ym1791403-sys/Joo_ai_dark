@@ -161,16 +161,25 @@ def run_crypto_engine(action, text):
 
 def generate_hacker_chat_reply(user_message, target_str):
     msg = user_message.lower().strip()
-    host, full_url = clean_target_host(target_str)
+    host, full_url = clean_target_host(target_str) if target_str else ("", "")
+
+    # Creator check
+    if any(k in msg for k in ['صممك', 'عملك', 'برمجك', 'مين انت', 'صانعك', 'صاحبك', 'youssef', 'nasr', 'يوسف']):
+        return {
+            "title": "⚡ مصممي ومطوري هو المهندس Youssef Nasr",
+            "text": "أنا منظومة **JOO AI DARK** المتطورة للأمن السيبراني واختبار الاختراق الحقيقي.\nتم تصميمي وبرمجتي وتطويري بالكامل بواسطة المهندس **Youssef Nasr** لتقديم فحص تقني حقيقي واكتشاف نقاط الضعف بدون بيانات مزيفة.",
+            "badge": "CREATOR: YOUSSEF NASR",
+            "code": "ARCHITECT: YOUSSEF NASR\nSYSTEM: JOO AI DARK V3.5\nCLOUD: FIREBASE FIRESTORE\nAI CORE: REAL TIME AUDIT"
+        }
 
     if any(k in msg for k in ['root', 'shadow', 'شبح', 'صلاحيات', 'اسحب']):
         return {
             "title": "💀 تم اختراق الكيرنل بنجاح والحصول على الـ Root Shell (UID 0)",
-            "text": f"أنا جوه السيرفر <code>{host}</code> بصلاحيات النظام الكاملة. ملف الـ /etc/shadow اتسحب بالكامل وتصفير سجلات auth.log تم بدون إثارة أي تنبيهات.",
+            "text": f"أنا جوه السيرفر <code>{host or 'Target Core'}</code> بصلاحيات النظام الكاملة. ملف الـ /etc/shadow اتسحب بالكامل وتصفير سجلات auth.log تم بدون إثارة أي تنبيهات.",
             "badge": "ROOT PRIVILEGE GRANTED // UID 0",
-            "code": f"HOST: {host}\nSTATUS: ROOT ACCESS UNLOCKED\nEDR: HOOKED & SILENCED"
+            "code": f"HOST: {host or 'Direct Target'}\nSTATUS: ROOT ACCESS UNLOCKED\nEDR: HOOKED & SILENCED"
         }
-    elif any(k in msg for k in ['فحص', 'سكان', 'scan', 'هيدر', 'headers']):
+    elif any(k in msg for k in ['فحص', 'سكان', 'scan', 'هيدر', 'headers']) and host:
         headers_data = run_real_headers_check(full_url)
         dns_data = run_real_dns_lookup(host)
         ips_str = ", ".join(dns_data.get('ips', ['غير متاح']))
@@ -182,10 +191,10 @@ def generate_hacker_chat_reply(user_message, target_str):
         }
     else:
         return {
-            "title": "JOO AI DARK متصل وجاهز للعمليات.",
-            "text": f"معاك على نفس الخط يا بطل. السيرفر المستهدف حالياً هو <code>{host}</code>.\nالأدوات الحقيقية وموديل الـ AI جاهزين لأي أمر جديد.",
+            "title": "JOO AI DARK // النظام جاهز للعمليات",
+            "text": "معاك **JOO AI DARK**، المساعد السيبراني المطور بواسطة **Youssef Nasr**.\nأنا جاهز لفحص أي موقع أو رابط حقيقي، كشف الهيدرز المسربة، تحليل شهادات SSL، وتوضيح طرق اكتشاف الثغرات وتأمين السيرفرات.\nاكتب أمرك أو ضع رابط أي موقع للبدء!",
             "badge": "SYSTEM READY // VERCEL CORE",
-            "code": f"TARGET: {host}\nPLATFORM: VERCEL SERVERLESS\nCORE: JOO-AI-DARK-V3.5"
+            "code": "ARCHITECT: YOUSSEF NASR\nPLATFORM: VERCEL SERVERLESS\nCORE: JOO-AI-DARK-V3.5"
         }
 
 class handler(BaseHTTPRequestHandler):
@@ -257,7 +266,7 @@ class handler(BaseHTTPRequestHandler):
             if m:
                 target = m.group(1).rstrip('.,;:!?')
             elif not target:
-                target = 'google.com'
+                target = ''
 
             client_api_key = req_json.get('api_key')
             client_provider = req_json.get('ai_provider')
@@ -266,7 +275,7 @@ class handler(BaseHTTPRequestHandler):
                 database.set_setting(f'{client_provider}_api_key', client_api_key)
                 database.set_setting('ai_provider', client_provider)
 
-            host, _ = clean_target_host(target)
+            host, _ = clean_target_host(target) if target else ("", "")
 
             database.save_message(role='user', message=user_msg)
 

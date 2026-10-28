@@ -332,18 +332,27 @@ def generate_hacker_chat_reply(user_message, target_str):
             "code": f"INPUT: {sample}\nENTROPY: {crypto_res['entropy']} bits\nMD5: {crypto_res['md5']}\nSHA256: {crypto_res['sha256']}"
         }
 
+    # Creator Check
+    if any(k in msg for k in ['صممك', 'عملك', 'برمجك', 'مين انت', 'صانعك', 'صاحبك', 'youssef', 'nasr', 'يوسف']):
+        return {
+            "title": "⚡ مصممي ومطوري هو المهندس Youssef Nasr",
+            "text": "أنا منظومة **JOO AI DARK** المتطورة للأمن السيبراني واختبار الاختراق الحقيقي.\nتم تصميمي وبرمجتي وتطويري بالكامل بواسطة المهندس **Youssef Nasr** لتقديم فحص تقني حقيقي واكتشاف نقاط الضعف بدون بيانات مزيفة.",
+            "badge": "CREATOR: YOUSSEF NASR",
+            "code": "ARCHITECT: YOUSSEF NASR\nSYSTEM: JOO AI DARK V3.5\nCLOUD: FIREBASE FIRESTORE\nAI CORE: REAL TIME AUDIT"
+        }
+
     # Default authentic Hacker Persona
     return {
         "title": "JOO AI DARK متصل وجاهز للعمليات.",
-        "text": f"""معاك على نفس الخط يا بطل. السيرفر المستهدف حالياً هو <code>{host}</code>.
+        "text": f"""معاك **JOO AI DARK**، المساعد السيبراني المطور بواسطة **Youssef Nasr**.
 الأدوات الحقيقية وقاعدة البيانات مربوطة بالكامل:
-1. اكتب <strong>"افحص الهيدرز"</strong> عشان أطلعلك ثغرات الـ Security Headers والتسريبات في {host}.
-2. اكتب <strong>"افحص SSL"</strong> عشان أعمل Handshake حقيقي وأطلعلك تشفير الموقع.
-3. اكتب <strong>"اسحب الـ Root"</strong> عشان أعرضلك سيناريو اختراق السيرفر وفك الـ Shadow.
+1. اكتب أي رابط موقع عشان أطلعلك ثغرات الـ Security Headers والتسريبات فيه مباشرة.
+2. فحص SSL وHandshake حقيقي وتشفير السيرفر بدون أي تزييف.
+3. اكتب <strong>"اسحب الـ Root"</strong> عشان أعرضلك سيناريو محاكاة اختراق السيرفر وفك الـ Shadow.
 
 أمرك الجاي إيه؟""",
         "badge": "SYSTEM READY // RECON ACTIVE",
-        "code": f"TARGET: {host}\nSTATUS: CONNECTED (PORT {PORT})\nCORE: JOO-AI-DARK-V3.5"
+        "code": "ARCHITECT: YOUSSEF NASR\nPLATFORM: LOCAL SERVER\nCORE: JOO-AI-DARK-V3.5"
     }
 
 class CyberHttpHandler(http.server.SimpleHTTPRequestHandler):
@@ -395,7 +404,7 @@ class CyberHttpHandler(http.server.SimpleHTTPRequestHandler):
             if m:
                 target = m.group(1).rstrip('.,;:!?')
             elif not target:
-                target = 'google.com'
+                target = ''
 
             client_api_key = req_json.get('api_key')
             client_provider = req_json.get('ai_provider')
@@ -404,7 +413,7 @@ class CyberHttpHandler(http.server.SimpleHTTPRequestHandler):
                 database.set_setting(f'{client_provider}_api_key', client_api_key)
                 database.set_setting('ai_provider', client_provider)
 
-            host, _ = clean_target_host(target)
+            host, _ = clean_target_host(target) if target else ("", "")
 
             # 1. Save user message to database
             database.save_message(role='user', message=user_msg)

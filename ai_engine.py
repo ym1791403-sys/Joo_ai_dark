@@ -30,10 +30,12 @@ HACKER_SYSTEM_PROMPT = """أنت JOO AI DARK - المنظومة السيبران
 4. تحافظ دائماً على هيبة ومظهر الهكر الغامض المحترف."""
 
 CANDIDATE_GEMINI_MODELS = [
-    'gemini-3.5-flash',
+    'gemini-flash-lite-latest',
+    'gemini-3.5-flash-lite',
+    'gemma-4-26b-a4b-it',
     'gemini-3.1-flash-lite',
-    'gemini-3-flash-preview',
-    'gemini-flash-latest'
+    'gemini-flash-latest',
+    'gemini-3.5-flash'
 ]
 
 def call_gemini_api(api_key, user_message, target_host="", live_audit=None):
@@ -85,7 +87,7 @@ def call_gemini_api(api_key, user_message, target_host="", live_audit=None):
             headers={'Content-Type': 'application/json'}
         )
         try:
-            with urllib.request.urlopen(req, timeout=5.0) as response:
+            with urllib.request.urlopen(req, timeout=3.5) as response:
                 res_data = json.loads(response.read().decode('utf-8'))
                 candidates = res_data.get('candidates', [])
                 if candidates and 'content' in candidates[0]:
