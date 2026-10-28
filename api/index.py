@@ -218,6 +218,9 @@ class handler(BaseHTTPRequestHandler):
         elif url_path == '/app.js':
             self._serve_file(os.path.join(ROOT_DIR, 'app.js'), 'application/javascript; charset=utf-8')
             return
+        elif url_path == '/firebase-config.js':
+            self._serve_file(os.path.join(ROOT_DIR, 'firebase-config.js'), 'application/javascript; charset=utf-8')
+            return
 
         self._send_json({"status": "active", "platform": "vercel"})
 

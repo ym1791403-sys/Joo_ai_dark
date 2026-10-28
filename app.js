@@ -251,6 +251,9 @@ function showToast(msg) {
 clearChatBtn.addEventListener('click', async () => {
     soundEngine.playClick();
     localStorage.removeItem('joo_chat_history');
+    if (window.JooFirebase && window.JooFirebase.isConnected()) {
+        window.JooFirebase.clearChatHistory();
+    }
     try {
         await fetch('/api/clear_history', { method: 'POST' });
     } catch (e) {}
@@ -260,7 +263,7 @@ clearChatBtn.addEventListener('click', async () => {
             <span>تم تفريغ المحادثة وإعادة تهيئة جلسة <strong>JOO AI DARK</strong>.</span>
         </div>
     `;
-    showToast('تم مسح المحادثة وتصفير السجلات');
+    showToast('تم مسح المحادثة وتصفير السجلات في السحابة');
 });
 
 // Auto-expand textarea
@@ -692,17 +695,43 @@ function appendLocalHistory(msgObj) {
         if (hist.length > 50) hist.shift();
         localStorage.setItem('joo_chat_history', JSON.stringify(hist));
     } catch(e) {}
+
+    // Real-time Cloud Synchronization with Firebase Firestore
+    try {
+        if (window.JooFirebase && window.JooFirebase.isConnected()) {
+            window.JooFirebase.saveMessage(msgObj);
+        }
+    } catch (fbErr) {
+        console.warn("[-] Firebase sync warning:", fbErr);
+    }
 }
 
-// Load Chat History from SQLite Database or LocalStorage (Vercel Serverless)
+// Load Chat History from Firebase Firestore, SQLite, or LocalStorage
 async function loadChatHistoryFromDB() {
     let messages = [];
-    try {
-        const res = await fetch('/api/history');
-        messages = await res.json();
-    } catch (e) {}
 
-    // Fallback to localStorage if hosted on Vercel Serverless
+    // 1. Try Firebase Cloud Firestore first
+    try {
+        if (window.JooFirebase && window.JooFirebase.isConnected()) {
+            const cloudMsgs = await window.JooFirebase.getRecentMessages(35);
+            if (cloudMsgs && cloudMsgs.length > 0) {
+                messages = cloudMsgs;
+                appendTerminalLine('[✔] Cloud Database synced: Loaded records from Firebase Firestore.', 'success');
+            }
+        }
+    } catch (fbErr) {
+        console.warn("[-] Firebase load error:", fbErr);
+    }
+
+    // 2. Try SQLite Backend API
+    if (!messages || messages.length === 0) {
+        try {
+            const res = await fetch('/api/history');
+            messages = await res.json();
+        } catch (e) {}
+    }
+
+    // 3. Fallback to localStorage if hosted on Vercel Serverless
     if (!messages || messages.length === 0) {
         try {
             messages = JSON.parse(localStorage.getItem('joo_chat_history') || '[]');
@@ -713,7 +742,7 @@ async function loadChatHistoryFromDB() {
         chatHistory.innerHTML = `
             <div class="system-message-banner">
                 <i class="fa-solid fa-database text-green"></i>
-                <span>تم استرجاع سجل الجلسات السابقة بنجاح</span>
+                <span>تم استرجاع سجل الجلسات السابقة بنجاح من قاعدة البيانات (Firebase Cloud / Local)</span>
             </div>
         `;
         messages.forEach(msg => {
@@ -751,4 +780,7 @@ async function loadChatHistoryFromDB() {
 // Trigger DB history load
 window.addEventListener('DOMContentLoaded', () => {
     loadChatHistoryFromDB();
+    if (window.JooFirebase && window.JooFirebase.isConnected()) {
+        appendTerminalLine('[+] Firebase Cloud Active: joo-ai-dark.firebaseapp.com [Firestore]', 'success');
+    }
 });

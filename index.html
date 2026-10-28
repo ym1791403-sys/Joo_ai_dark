@@ -50,6 +50,7 @@
                 <div class="target-stats">
                     <div class="stat-pill"><i class="fa-solid fa-network-wired"></i> Port: <span id="portDisplay">443 / 80</span></div>
                     <div class="stat-pill"><i class="fa-solid fa-bolt text-cyan"></i> Mode: <span class="text-success">LIVE API</span></div>
+                    <div class="stat-pill"><i class="fa-solid fa-fire text-amber"></i> DB: <span id="dbBadge" class="text-green">FIREBASE CLOUD</span></div>
                 </div>
                 <button class="real-scan-btn" id="startRealScanBtn">
                     <i class="fa-solid fa-satellite-dish"></i> فحص حقيقي فوري للهدف
@@ -115,7 +116,7 @@
             <div class="sidebar-footer">
                 <div class="status-indicator">
                     <span class="status-dot online"></span>
-                    <span>JOO Neural Core: متصل</span>
+                    <span>JOO Neural & Firebase DB: متصل</span>
                 </div>
                 <button class="btn-clear-chat" id="clearChatBtn" title="تفريغ المحادثة">
                     <i class="fa-solid fa-trash-can"></i>
@@ -426,6 +427,13 @@
         <span id="toastMsg">تم تنفيذ الأمر بنجاح</span>
     </div>
 
+    <!-- Firebase App & Firestore Compatibility SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+
+    <!-- JOO AI Firebase Cloud Database Engine -->
+    <script src="firebase-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
