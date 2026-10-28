@@ -28,6 +28,7 @@ if ROOT_DIR not in sys.path:
 
 import database
 import ai_engine
+import recon
 
 # Initialize database
 database.init_db()
@@ -323,6 +324,15 @@ class handler(BaseHTTPRequestHandler):
             text = req_json.get('text', '')
             res = run_crypto_engine('hash', text)
             self._send_json(res)
+            return
+
+        elif url_path == '/api/recon':
+            target = req_json.get('target', '').strip()
+            if not target:
+                self._send_json({"status": "failed", "error": "يرجى تحديد رابط أو دومين الموقع"})
+                return
+            recon_res = recon.run_public_assets_recon(target)
+            self._send_json(recon_res)
             return
 
         elif url_path == '/api/settings':

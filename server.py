@@ -27,6 +27,7 @@ from datetime import datetime
 
 import database
 import ai_engine
+import recon
 
 PORT = int(os.environ.get('PORT', 5173))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -474,6 +475,16 @@ class CyberHttpHandler(http.server.SimpleHTTPRequestHandler):
             action = req_json.get('action', 'hash')
             res = run_crypto_engine(action, text)
             self._send_json(res)
+            return
+
+        # Endpoint 3.5: Public Assets & Frontend Reconnaissance
+        elif self.path == '/api/recon':
+            target = req_json.get('target', '').strip()
+            if not target:
+                self._send_json({"status": "failed", "error": "يرجى تحديد رابط أو دومين الموقع"})
+                return
+            recon_res = recon.run_public_assets_recon(target)
+            self._send_json(recon_res)
             return
 
         # Endpoint 4: Save AI Settings into SQLite

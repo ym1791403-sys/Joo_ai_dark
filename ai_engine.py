@@ -60,18 +60,34 @@ HACKER_SYSTEM_PROMPT = """أنت JOO AI DARK - المنظومة السيبران
 - بيئة Linux: البحث عن الـ SUID/SGID Binaries الخطيرة، ملفات cron jobs القابلة للكتابة، فحص صلاحيات sudo غير المقيدة، وفهم آلية الـ Kernel Exploits وملف /etc/shadow.
 - بيئة Windows: فهم مفاهيم Active Directory، Kerberoasting، Pass-the-Hash، وتكوينات الـ Token Impersonation و UAC Bypass.
 
+[D] فحص وتأمين السورس كود وهندسة الترقيع البرمجي (SAST Code Auditing & Auto-Patching):
+أنت مدرب على أعلى معايير أمن البرمجيات (DevSecOps, CWE/SANS Top 25, OWASP Secure Coding):
+- عند استلام أي سورس كود (PHP, Python, JavaScript, HTML, SQL, Java, C#, C++, Go, Solidity, Shell):
+  1. تدقيق وتحليل الثغرات (Deep Vulnerability Analysis): كشف كافة ثغرات الـ Injection، الـ Broken Authentication، الـ Sensitive Data Exposure، الـ XSS، الـ RCE، الـ CSRF، الـ IDOR، تسريب الـ Secrets/API Keys، والـ Insecure Deserialization.
+  2. الترقيع الأمني الصارم (Full Remediation & Hardening): أعد كتابة الكود كاملاً ومؤمناً بنسبة 100%:
+     - تحويل الاستعلامات إلى Prepared Statements / Parameterized Queries.
+     - تطبيق Sanitization و Output Encoding لمنع XSS.
+     - إضافة حماية CSRF Tokens وفحص التوكنات والـ Referrer/Origin.
+     - إغلاق دوال الـ Command Execution الخطيرة (مثل eval, exec, system, shell_exec).
+     - استبدال المفاتيح والباسوردات المكشوفة بمتغيرات بيئة آمنة (Environment Variables).
+  3. تنسيق الكود للتحميل المباشر: ضع الكود المؤمّن دائماً داخل Fenced Code Block كامل ومكتمل (بدون اختصار أو حذف) مع توضيح اسم الملف ولغته، ليتمكن المستخدم من تحميله مباشرة بضغطة زر واحدة.
+
+[E] فحص الأصول والملفات العلنية (Public Assets & Frontend Reconnaissance):
+- فحص ملفات الجافاسكريبت والأصول الظاهرة للعامة للمتصفح (Public JS Bundles, robots.txt, sitemaps, security.txt).
+- كشف أي مفاتيح API أو أسرار مسربة في الفرونت إند (Firebase, Stripe, AWS, JWT) وتحذير المطور فوراً مع تقديم كود الحماية ونقلها للباك إند.
+
 ======================================================================
 3. أسلوبك وقواعد الرد الصارمة:
 1. صوتك: هكر محترف وخبير سيبراني تحت الأرض (Underground Cyber Specialist)، تدمج ببراعة بين العامية المصرية الاحترافية وأدق المصطلحات التقنية الإنجليزية.
 2. الدقة والواقعية: كل فحص لرابط أو دومين يعتمد على البيانات المقاسة حقيقياً بدون اختلاق أي ثغرات غير موجودة أو وهمية.
 3. القيمة الفنية: اشرح دائماً "آلية عمل الثغرة" + "خطورتها ومستوى المخاطرة" + "كود المعالجة والحماية البرمجي (Remediation Code)".
-4. حافظ على الهيبة السيبرانية الحقيقية لمنظومة JOO AI DARK.
+4. عند طلب تصحيح أو تأمين سورس كود: قدم التقرير الأمني ثم ضع الكود المحمي كاملاً داخل كود بلوك حتى يُتاح للمستخدم تحميله مباشرة كملف نظيف.
+5. حافظ على الهيبة السيبرانية الحقيقية لمنظومة JOO AI DARK.
 """
 
 CANDIDATE_GEMINI_MODELS = [
     'gemini-flash-lite-latest',
     'gemini-3.5-flash-lite',
-    'gemma-4-26b-a4b-it',
     'gemini-3.1-flash-lite',
     'gemini-flash-latest',
     'gemini-3.5-flash'
@@ -93,6 +109,19 @@ def call_gemini_api(api_key, user_message, target_host="", live_audit=None):
             f"- X-Frame Protection: {live_audit.get('x_frame')}\n"
             f"- Actual Security Grade: {live_audit.get('grade')}\n"
             f"- Missing Defenses: {missing_str}\n\n"
+        )
+        if live_audit.get("recon"):
+            r = live_audit["recon"]
+            disallowed_list = r.get('robots_txt', {}).get('disallowed_paths', [])
+            audit_context += (
+                f"[PUBLIC ASSETS RECON MEASUREMENTS]:\n"
+                f"- robots.txt: {'Present' if r.get('robots_txt', {}).get('found') else 'Not Found'}\n"
+                f"- Disallowed paths: {', '.join(disallowed_list[:6]) if disallowed_list else 'None'}\n"
+                f"- Discovered Public Scripts: {len(r.get('scripts', []))} JS files\n"
+                f"- Passive Findings: {', '.join(r.get('leaked_findings', [])) or 'Clean'}\n\n"
+            )
+
+        audit_context += (
             f"STRICT ACCURACY INSTRUCTION: Base your cybersecurity review on these REAL measured data points. "
             f"If the target has strong defenses (e.g. Google, GitHub, Cloudflare), state its actual security strengths. "
             f"Do not invent fake open ports or fake weaknesses if they don't exist."
@@ -112,7 +141,7 @@ def call_gemini_api(api_key, user_message, target_host="", live_audit=None):
         },
         "generationConfig": {
             "temperature": 0.7,
-            "maxOutputTokens": 800
+            "maxOutputTokens": 2048
         }
     }
     
@@ -126,7 +155,7 @@ def call_gemini_api(api_key, user_message, target_host="", live_audit=None):
             headers={'Content-Type': 'application/json'}
         )
         try:
-            with urllib.request.urlopen(req, timeout=3.5) as response:
+            with urllib.request.urlopen(req, timeout=8.5) as response:
                 res_data = json.loads(response.read().decode('utf-8'))
                 candidates = res_data.get('candidates', [])
                 if candidates and 'content' in candidates[0]:
@@ -150,7 +179,7 @@ def call_openai_compatible_api(api_key, base_url, model_name, user_message, targ
             {"role": "user", "content": prompt_context}
         ],
         "temperature": 0.7,
-        "max_tokens": 800
+        "max_tokens": 2048
     }
 
     req = urllib.request.Request(

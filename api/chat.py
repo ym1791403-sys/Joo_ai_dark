@@ -25,6 +25,7 @@ if ROOT_DIR not in sys.path:
 
 import database
 import ai_engine
+import recon
 
 def extract_and_clean_target(text):
     """Detects if user message contains a domain or URL"""
@@ -207,6 +208,27 @@ def get_hacker_response(user_msg, audit_data):
             "badge": f"REAL AUDIT: {audit_data['grade'].split(' ')[0]}",
             "code": f"TARGET: {host}\nIPs: {ips_str}\nTLS_VERSION: {audit_data['tls']}\nCIPHER: {audit_data['cipher']}\nWAF: {audit_data['waf']}\nSERVER: {audit_data['server']}\nGRADE: {audit_data['grade']}"
         }
+
+    # Public Assets & Recon queries
+    if any(k in msg for k in ['ملف', 'أصول', 'اصول', 'علني', 'robots', 'ظاهر', 'سحب']) and host:
+        try:
+            recon_data = recon.run_public_assets_recon(host)
+            scripts_count = len(recon_data.get('scripts', []))
+            disallowed = recon_data.get('robots_txt', {}).get('disallowed_paths', [])
+            disallowed_str = ', '.join(disallowed[:6]) if disallowed else 'لا توجد مسارات محظورة'
+            return {
+                "title": f"🌐 فحص الأصول والملفات العلنية للهدف: {host}",
+                "text": f"استخرجتلك كافة الأصول والملفات العلنية المتاحة للمتصفح بدون أي عوائق:\n\n"
+                        f"- **ملف robots.txt**: {'موجود ومكتشف ✅' if recon_data.get('robots_txt', {}).get('found') else 'غير متاح ❌'}\n"
+                        f"- **المسارات المستثناة المكتشفة**: `{disallowed_str}`\n"
+                        f"- **عدد سكربتات الـ JavaScript العلنية**: `{scripts_count}` ملفات ظاهرين في الفرونت إند.\n"
+                        f"- **خريطة الموقع sitemap.xml**: {'متوفرة ✅' if recon_data.get('sitemap_xml', {}).get('found') else 'مخفية ❌'}\n\n"
+                        f"الأصول العلنية دي هي المدخل الأول في الـ Reconnaissance لاكتشاف الـ Endpoints والـ API Keys المسربة في كود الفرونت إند.",
+                "badge": "PUBLIC ASSETS RECON",
+                "code": f"TARGET: {host}\nSCRIPTS: {scripts_count} JS FILES\nROBOTS_TXT: {recon_data.get('robots_txt', {}).get('found')}\nDISALLOWED_PATHS: {len(disallowed)}"
+            }
+        except Exception:
+            pass
 
     # General Root / Exploit queries
     if any(k in msg for k in ['root', 'shadow', 'شبح', 'صلاحيات', 'اسحب']):

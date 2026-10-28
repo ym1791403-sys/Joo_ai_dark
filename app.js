@@ -35,6 +35,32 @@ const closeCryptoModalBtn = document.getElementById('closeCryptoModalBtn');
 const runCryptoBtn = document.getElementById('runCryptoBtn');
 const cryptoTextInput = document.getElementById('cryptoTextInput');
 
+// File Upload & Attachment Elements
+const attachFileBtn = document.getElementById('attachFileBtn');
+const codeFileInput = document.getElementById('codeFileInput');
+const attachmentBadgeContainer = document.getElementById('attachmentBadgeContainer');
+const attachedFileName = document.getElementById('attachedFileName');
+const attachedFileSize = document.getElementById('attachedFileSize');
+const removeAttachmentBtn = document.getElementById('removeAttachmentBtn');
+
+// Public Assets Recon Elements
+const publicReconBtn = document.getElementById('publicReconBtn');
+const reconModal = document.getElementById('reconModal');
+const closeReconModalBtn = document.getElementById('closeReconModalBtn');
+const reconTargetInput = document.getElementById('reconTargetInput');
+const runReconBtn = document.getElementById('runReconBtn');
+const reconResultsContainer = document.getElementById('reconResultsContainer');
+const reconRobotsStatus = document.getElementById('reconRobotsStatus');
+const reconRobotsPaths = document.getElementById('reconRobotsPaths');
+const reconScriptsCount = document.getElementById('reconScriptsCount');
+const reconScriptsList = document.getElementById('reconScriptsList');
+const reconFindings = document.getElementById('reconFindings');
+const sendReconToChatBtn = document.getElementById('sendReconToChatBtn');
+
+let currentAttachedFile = null;
+let lastUploadedFilename = '';
+window._codeStore = {};
+
 // Auto-initialize Gemini Key from secure storage
 const _SECURE_KEY_B64 = 'QVEuQWI4Uk42TDJBVDN3X3BseWpUMy0ycTF2dXVLUExNWlZpQ1R2di1SSzRaQVRBWldJSWc=';
 try {
@@ -64,11 +90,11 @@ messageInput.addEventListener('input', function() {
 
 function submitUserMessage() {
     const text = messageInput.value.trim();
-    if (!text) return;
+    if (!text && !currentAttachedFile) return;
 
     const now = Date.now();
     // Strict deduplication: block if currently sending OR identical text within 1200ms
-    if (isSendingMessage || (text === lastSubmittedText && now - lastSubmittedTimestamp < 1200)) {
+    if (isSendingMessage || (text && text === lastSubmittedText && now - lastSubmittedTimestamp < 1200)) {
         console.warn("Prevented duplicate submission attempt");
         return;
     }
@@ -84,7 +110,17 @@ function submitUserMessage() {
     // Disable send button temporarily
     if (sendBtn) sendBtn.disabled = true;
 
-    sendMessage(text);
+    let payloadText = text;
+    let displayText = text;
+
+    if (currentAttachedFile) {
+        lastUploadedFilename = currentAttachedFile.name;
+        displayText = `📁 **[ملف مرفق: ${currentAttachedFile.name} (${currentAttachedFile.size})]**\n${text || 'افحص الكود أمنياً بدقة، واكتشف كافة الثغرات ورقعها وأعد كتابة الكود مؤمناً وجاهزاً للتحميل.'}`;
+        payloadText = `[طلب فحص وتأمين سورس كود - اسم الملف: ${currentAttachedFile.name}]\n\`\`\`${currentAttachedFile.ext}\n${currentAttachedFile.content}\n\`\`\`\n\n[تعليمات الأمان]: ${text || 'قم بفحص وتدقيق هذا السورس كود أمنياً بدقة، واكتشف كافة ثغرات الـ OWASP/CWE، ورقعها بالكامل، وأعد كتابة الكود كاملاً ومؤمناً بنسبة 100% وجاهزاً للتحميل المباشر.'}`;
+        clearAttachedFile();
+    }
+
+    sendMessage(payloadText, displayText);
 }
 
 // Keydown Enter on textarea
@@ -116,7 +152,7 @@ window.sendPrompt = function(text) {
 };
 
 // Send Message
-async function sendMessage(userText) {
+async function sendMessage(userText, displayText = null) {
     if (!userText || !userText.trim()) {
         isSendingMessage = false;
         if (sendBtn) sendBtn.disabled = false;
@@ -124,12 +160,13 @@ async function sendMessage(userText) {
     }
 
     const cleanUserText = userText.trim();
+    const cleanDisplayText = (displayText || userText).trim();
 
     // DOM-level deduplication: If last child in chatHistory is already an identical user message, do not duplicate
     const lastRow = chatHistory.lastElementChild;
     if (lastRow && lastRow.classList.contains('user-row')) {
         const lastP = lastRow.querySelector('p');
-        if (lastP && lastP.textContent.trim() === cleanUserText) {
+        if (lastP && lastP.textContent.trim() === cleanDisplayText) {
             console.warn("Duplicate user message prevented");
             isSendingMessage = false;
             if (sendBtn) sendBtn.disabled = false;
@@ -155,7 +192,7 @@ async function sendMessage(userText) {
     userRow.innerHTML = `
         <div class="message-content-wrapper">
             <div class="message-bubble user-bubble">
-                <p>${escapeHTML(cleanUserText)}</p>
+                <p>${escapeHTML(cleanDisplayText).replace(/\n/g, '<br>')}</p>
             </div>
             <div class="message-meta">
                 <span>${timeNow}</span>
@@ -180,7 +217,7 @@ async function sendMessage(userText) {
         scrollToBottom();
     }
 
-    appendLocalHistory({ role: 'user', message: cleanUserText, created_at: timeNow });
+    appendLocalHistory({ role: 'user', message: cleanDisplayText, created_at: timeNow });
 
     const localApiKey = localStorage.getItem('joo_api_key') || '';
     const localProvider = localStorage.getItem('joo_ai_provider') || 'gemini';
@@ -230,6 +267,116 @@ async function sendMessage(userText) {
 }
 
 // Render AI Response
+// ======================================================================
+// Code Block Extraction & 1-Click Secured File Downloader
+// ======================================================================
+
+function getExtFromLang(lang) {
+    if (!lang) return 'txt';
+    const l = lang.toLowerCase().trim();
+    const map = {
+        'php': 'php', 'python': 'py', 'py': 'py',
+        'javascript': 'js', 'js': 'js', 'node': 'js',
+        'typescript': 'ts', 'ts': 'ts', 'html': 'html',
+        'css': 'css', 'sql': 'sql', 'json': 'json',
+        'java': 'java', 'cpp': 'cpp', 'c++': 'cpp', 'c': 'c',
+        'csharp': 'cs', 'cs': 'cs', 'go': 'go', 'golang': 'go',
+        'sh': 'sh', 'bash': 'sh', 'shell': 'sh',
+        'solidity': 'sol', 'sol': 'sol', 'env': 'env',
+        'yaml': 'yml', 'yml': 'yml'
+    };
+    return map[l] || l.replace(/[^a-z0-9]/g, '') || 'txt';
+}
+
+function formatMarkdownWithCodeBlocks(text, originalFilename = '') {
+    if (!text) return '';
+
+    const codeBlockRegex = /```([a-zA-Z0-9_\-\.\+]*)\n?([\s\S]*?)```/g;
+    const blocks = [];
+    
+    let sanitized = text.replace(codeBlockRegex, (match, lang, code) => {
+        const token = `__CODE_BLOCK_PLACEHOLDER_${blocks.length}__`;
+        blocks.push({ lang: (lang || '').trim(), code: code });
+        return token;
+    });
+
+    let formatted = escapeHTML(sanitized)
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="bidi-term">$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code class="inline-code" style="background: #0d1117; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); color: #7ee787; direction: ltr; unicode-bidi: isolate; display: inline-block; margin: 0 2px;">$1</code>')
+        .replace(/\n\n/g, '<div class="msg-para-spacer"></div>')
+        .replace(/\n/g, '<br>');
+
+    blocks.forEach((item, index) => {
+        const token = `__CODE_BLOCK_PLACEHOLDER_${index}__`;
+        const codeId = `code_${Date.now()}_${index}`;
+        window._codeStore[codeId] = item.code;
+
+        let langDisplay = item.lang ? item.lang.toUpperCase() : 'SOURCE CODE';
+        let ext = getExtFromLang(item.lang);
+        let downloadName = 'secured_code.' + ext;
+
+        if (originalFilename) {
+            const dotIdx = originalFilename.lastIndexOf('.');
+            const baseName = dotIdx !== -1 ? originalFilename.substring(0, dotIdx) : originalFilename;
+            const origExt = dotIdx !== -1 ? originalFilename.substring(dotIdx + 1) : ext;
+            downloadName = `${baseName}_secured.${origExt || ext}`;
+        }
+
+        const blockHtml = `
+        <div class="code-box-container">
+            <div class="code-box-header">
+                <span class="code-lang-label"><i class="fa-solid fa-shield-halved"></i> ${escapeHTML(langDisplay)} // كود مؤمّن ومصحح</span>
+                <div class="code-actions-group">
+                    <button class="code-download-btn" onclick="triggerDownloadStoredCode('${codeId}', '${escapeHTML(downloadName)}')" title="تحميل الكود المؤمّن كملف نظيف">
+                        <i class="fa-solid fa-download"></i> تحميل الملف المؤمّن
+                    </button>
+                    <button class="code-copy-btn" onclick="triggerCopyStoredCode('${codeId}', this)" title="نسخ الكود">
+                        <i class="fa-solid fa-copy"></i> نسخ
+                    </button>
+                </div>
+            </div>
+            <pre class="code-content-pre"><code>${escapeHTML(item.code)}</code></pre>
+        </div>`;
+
+        formatted = formatted.replace(token, blockHtml);
+    });
+
+    return formatted;
+}
+
+window.triggerDownloadStoredCode = function(codeId, filename) {
+    const code = window._codeStore[codeId];
+    if (!code) {
+        showToast("خطأ: لم يتم العثور على محتوى الكود");
+        return;
+    }
+    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'secured_code.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`تم تحميل الملف المؤمّن بنجاح: ${filename}`);
+};
+
+window.triggerCopyStoredCode = function(codeId, btn) {
+    const code = window._codeStore[codeId];
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(() => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check text-emerald"></i> تم النسخ!';
+        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        showToast("تم نسخ الكود المؤمّن بنجاح");
+    }).catch(() => {
+        showToast("فشل النسخ");
+    });
+};
+
+// Render AI Response
 function renderAIResponse(resData, saveLocally = true) {
     if (!resData || !resData.text) return;
 
@@ -258,13 +405,8 @@ function renderAIResponse(resData, saveLocally = true) {
     const aiRow = document.createElement('div');
     aiRow.className = 'message-row ai-row';
 
-    // Simple markdown-to-HTML parser for formatting
-    let formattedText = escapeHTML(resData.text || '')
-        .replace(/\*\*(.*?)\*\*/g, '<strong class="bidi-term">$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`(.*?)`/g, '<code class="inline-code" style="background: #0d1117; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); color: #7ee787; direction: ltr; unicode-bidi: isolate; display: inline-block; margin: 0 2px;">$1</code>')
-        .replace(/\n\n/g, '<div class="msg-para-spacer"></div>')
-        .replace(/\n/g, '<br>');
+    // Format Markdown including Interactive Hardened Code Blocks
+    let formattedText = formatMarkdownWithCodeBlocks(resData.text || '', lastUploadedFilename);
 
     aiRow.innerHTML = `
         <div class="avatar-box ai-avatar">
@@ -780,6 +922,190 @@ function escapeHTML(str) {
             '"': '&quot;'
         }[tag] || tag)
     );
+}
+
+// ======================================================================
+// File Upload & Attachment Management
+// ======================================================================
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function handleSelectedFile(file) {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+        showToast("حجم الملف كبير جداً (الحد الأقصى 2MB)");
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const content = e.target.result;
+        const ext = file.name.split('.').pop() || 'txt';
+        currentAttachedFile = {
+            name: file.name,
+            size: formatBytes(file.size),
+            content: content,
+            ext: ext
+        };
+        if (attachedFileName) attachedFileName.textContent = file.name;
+        if (attachedFileSize) attachedFileSize.textContent = currentAttachedFile.size;
+        if (attachmentBadgeContainer) attachmentBadgeContainer.classList.remove('hidden');
+        if (attachFileBtn) attachFileBtn.classList.add('active');
+        showToast(`تم إرفاق الملف: ${file.name} - اضغط إرسال للبدء في الفحص والترقيع`);
+    };
+    reader.readAsText(file);
+}
+
+function clearAttachedFile() {
+    currentAttachedFile = null;
+    if (attachmentBadgeContainer) attachmentBadgeContainer.classList.add('hidden');
+    if (codeFileInput) codeFileInput.value = '';
+    if (attachFileBtn) attachFileBtn.classList.remove('active');
+}
+
+if (attachFileBtn && codeFileInput) {
+    attachFileBtn.addEventListener('click', () => {
+        codeFileInput.click();
+    });
+    codeFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            handleSelectedFile(e.target.files[0]);
+        }
+    });
+}
+
+if (removeAttachmentBtn) {
+    removeAttachmentBtn.addEventListener('click', clearAttachedFile);
+}
+
+window.triggerCodeUpload = function() {
+    if (codeFileInput) codeFileInput.click();
+};
+
+// Drag and drop code files onto the chat area
+if (chatContainer) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+        chatContainer.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            chatContainer.classList.add('drag-over');
+        }, false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        chatContainer.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            chatContainer.classList.remove('drag-over');
+        }, false);
+    });
+    chatContainer.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt ? dt.files : null;
+        if (files && files[0]) {
+            handleSelectedFile(files[0]);
+        }
+    });
+}
+
+// ======================================================================
+// Public Assets Reconnaissance Modal
+// ======================================================================
+
+window.openPublicReconModal = function() {
+    if (reconModal) {
+        reconModal.classList.add('active');
+        if (reconTargetInput) reconTargetInput.focus();
+    }
+};
+
+if (publicReconBtn) {
+    publicReconBtn.addEventListener('click', openPublicReconModal);
+}
+if (closeReconModalBtn && reconModal) {
+    closeReconModalBtn.addEventListener('click', () => reconModal.classList.remove('active'));
+}
+
+if (runReconBtn) {
+    runReconBtn.addEventListener('click', async () => {
+        const target = (reconTargetInput ? reconTargetInput.value : '').trim();
+        if (!target) {
+            showToast("يرجى إدخال رابط أو دومين الموقع");
+            return;
+        }
+
+        runReconBtn.disabled = true;
+        runReconBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري فحص الأصول...';
+
+        try {
+            const res = await fetch('/api/recon', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target: target })
+            });
+
+            if (!res.ok) throw new Error("HTTP error " + res.status);
+            const data = await res.json();
+
+            if (reconResultsContainer) reconResultsContainer.style.display = 'block';
+
+            // Robots.txt
+            if (reconRobotsStatus) {
+                if (data.robots_txt && data.robots_txt.found) {
+                    reconRobotsStatus.innerHTML = '<span class="text-emerald"><i class="fa-solid fa-circle-check"></i> متوفر ومكتشف للعامة</span>';
+                    const paths = data.robots_txt.disallowed_paths || [];
+                    reconRobotsPaths.innerHTML = paths.length 
+                        ? `<strong>المسارات المستثناة (Disallow):</strong><br>${paths.map(p => escapeHTML(p)).join('<br>')}`
+                        : 'لا توجد مسارات محظورة في الملف.';
+                } else {
+                    reconRobotsStatus.innerHTML = '<span style="color: #8b949e;"><i class="fa-solid fa-circle-xmark"></i> غير موجود أو محجوب</span>';
+                    reconRobotsPaths.textContent = 'لم يتم العثور على ملف robots.txt.';
+                }
+            }
+
+            // Scripts
+            const scripts = data.scripts || [];
+            if (reconScriptsCount) reconScriptsCount.textContent = scripts.length;
+            if (reconScriptsList) {
+                reconScriptsList.innerHTML = scripts.length
+                    ? scripts.map(s => `<div style="margin-bottom: 4px; word-break: break-all;">• <a href="${escapeHTML(s)}" target="_blank" style="color: #58a6ff; text-decoration: none;">${escapeHTML(s)}</a></div>`).join('')
+                    : 'لم يتم العثور على روابط سكربتات خارجية في الصفحة الرئيسية.';
+            }
+
+            // Findings
+            const findings = data.leaked_findings || [];
+            if (reconFindings) {
+                if (findings.length) {
+                    reconFindings.innerHTML = `<span style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> تم رصد احتمالات تسريب:</span><br>` +
+                        findings.map(f => `⚠️ ${escapeHTML(f)}`).join('<br>');
+                } else {
+                    reconFindings.innerHTML = '<span class="text-emerald"><i class="fa-solid fa-shield-halved"></i> لم يتم رصد مفاتيح حساسة مكشوفة علناً في السكربتات المفحوصة.</span>';
+                }
+            }
+
+            showToast("تم الانتهاء من استكشاف الأصول العلنية بنجاح");
+        } catch (err) {
+            console.error(err);
+            showToast("حدث خطأ أثناء فحص الأصول العلنية");
+        } finally {
+            runReconBtn.disabled = false;
+            runReconBtn.innerHTML = '<i class="fa-solid fa-radar"></i> فحص الأصول العلنية';
+        }
+    });
+}
+
+if (sendReconToChatBtn) {
+    sendReconToChatBtn.addEventListener('click', () => {
+        const target = (reconTargetInput ? reconTargetInput.value : '').trim();
+        if (reconModal) reconModal.classList.remove('active');
+        if (target) {
+            sendPrompt(`افحص الأصول والملفات العلنية وسكربتات الجافاسكريبت لموقع ${target} واكشف المسارات المسربة`);
+        }
+    });
 }
 
 // Init

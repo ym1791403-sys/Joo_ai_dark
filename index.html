@@ -32,6 +32,10 @@
             </div>
 
             <div class="header-actions">
+                <button class="top-icon-btn" id="publicReconBtn" title="مستكشف الأصول والملفات العلنية (JS & robots.txt)">
+                    <i class="fa-solid fa-globe"></i>
+                    <span>الأصول العلنية</span>
+                </button>
                 <button class="top-icon-btn" id="cryptoToolBtn" title="أداة التشفير وفك الهاشات">
                     <i class="fa-solid fa-key"></i>
                     <span>أداة الهاشات</span>
@@ -64,6 +68,20 @@
                     </p>
 
                     <div class="quick-prompts-grid">
+                        <button class="prompt-chip" onclick="triggerCodeUpload()">
+                            <i class="fa-solid fa-file-shield text-emerald"></i>
+                            <div class="prompt-info">
+                                <span class="p-title">فحص وتأمين سورس كود</span>
+                                <span class="p-desc">رفع ملف كود، ترقيع الثغرات، وتحميله مؤمّناً</span>
+                            </div>
+                        </button>
+                        <button class="prompt-chip" onclick="openPublicReconModal()">
+                            <i class="fa-solid fa-globe text-emerald"></i>
+                            <div class="prompt-info">
+                                <span class="p-title">استكشاف الأصول العلنية</span>
+                                <span class="p-desc">سحب ملفات الـ JS العلنية، robots.txt، وكشف التسريبات</span>
+                            </div>
+                        </button>
                         <button class="prompt-chip" onclick="sendPrompt('افحص أمان موقعي واكشف الـ IPs الحقيقية وشهادة التشفير وخادم الويب')">
                             <i class="fa-solid fa-shield-virus text-emerald"></i>
                             <div class="prompt-info">
@@ -108,13 +126,30 @@
         <!-- Bottom Input Bar (Clean & Centered) -->
         <footer class="chat-footer">
             <div class="input-wrapper">
+                <!-- Attached File Badge Preview -->
+                <div class="attachment-badge-container hidden" id="attachmentBadgeContainer">
+                    <div class="attachment-pill">
+                        <i class="fa-solid fa-file-code text-emerald"></i>
+                        <span class="attachment-name" id="attachedFileName">code.php</span>
+                        <span class="attachment-size" id="attachedFileSize">0 KB</span>
+                        <button type="button" class="remove-attachment-btn" id="removeAttachmentBtn" title="إلغاء الملف">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <span class="attachment-hint">جاهز للفحص الأمني الشامل والترقيع والتحميل المباشر</span>
+                </div>
+
                 <form class="chat-form" id="chatForm">
+                    <input type="file" id="codeFileInput" style="display: none;" accept=".php,.py,.js,.html,.css,.sql,.json,.env,.java,.cpp,.c,.cs,.ts,.txt,.xml,.yaml,.sh">
+                    <button type="button" class="tool-circle-btn" id="attachFileBtn" title="رفع ملف سورس كود لتأمينه وترقيعه">
+                        <i class="fa-solid fa-paperclip"></i>
+                    </button>
                     <button type="button" class="mic-btn" id="micBtn" title="تحدث بالصوت (دردشة صوتية)">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
                     <textarea 
                         id="messageInput" 
-                        placeholder="اكتب أمرك أو ضع رابط أي موقع أو اضغط المايك للتحدث بالصوت..." 
+                        placeholder="اكتب أمرك أو ارفع ملف كود لتأمينه أو ضع رابط موقع..." 
                         rows="1"
                         dir="auto"></textarea>
                     <button type="submit" class="send-btn" id="sendBtn" title="إرسال الأمر">
@@ -203,6 +238,48 @@
                         </div>
                         <div class="tile-code" id="b64Val">UEBzc3cwcmQyMDI2IQ==</div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Public Assets Recon Modal Tool -->
+    <div class="modal-overlay" id="reconModal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fa-solid fa-globe text-emerald"></i>
+                    <span>مستكشف الأصول والملفات العلنية (Public Frontend Assets Recon)</span>
+                </div>
+                <button class="modal-close-btn" id="closeReconModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <label class="modal-label">اكتب رابط أو دومين الموقع المستهدف:</label>
+                <div class="modal-input-group">
+                    <input type="text" id="reconTargetInput" class="modal-input" placeholder="مثال: https://github.com أو example.com" value="https://github.com">
+                    <button class="btn-primary" id="runReconBtn"><i class="fa-solid fa-radar"></i> فحص الأصول العلنية</button>
+                </div>
+
+                <div class="crypto-results-list" id="reconResultsContainer" style="display: none;">
+                    <div class="crypto-tile">
+                        <span class="tile-label">حالة ملف إرشادات الأرشفة (robots.txt)</span>
+                        <div class="tile-val text-emerald" id="reconRobotsStatus">مكتشف ومتاح للعامة</div>
+                        <div class="tile-code" id="reconRobotsPaths" style="max-height: 120px; overflow-y: auto; font-size: 0.85rem; margin-top: 6px;"></div>
+                    </div>
+                    <div class="crypto-tile">
+                        <div class="tile-flex">
+                            <span class="tile-label">سكربتات الـ JavaScript العلنية المكتشفة:</span>
+                            <span class="badge-counter" id="reconScriptsCount">0</span>
+                        </div>
+                        <div class="tile-code" id="reconScriptsList" style="max-height: 140px; overflow-y: auto; font-size: 0.85rem;"></div>
+                    </div>
+                    <div class="crypto-tile">
+                        <span class="tile-label">كشف المفاتيح والمسارات المسربة في الفرونت إند:</span>
+                        <div class="tile-val" id="reconFindings" style="font-size: 0.9rem;"></div>
+                    </div>
+                    <button class="btn-secondary" id="sendReconToChatBtn" style="margin-top: 10px; width: 100%; justify-content: center;">
+                        <i class="fa-solid fa-comments"></i> إرسال تقرير الأصول إلى المحادثة لطلب تحليل الـ AI
+                    </button>
                 </div>
             </div>
         </div>
