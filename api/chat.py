@@ -134,7 +134,7 @@ def get_hacker_response(user_msg, audit_data):
     if any(k in msg for k in ['صممك', 'عملك', 'برمجك', 'مين انت', 'صانعك', 'صاحبك', 'youssef', 'nasr', 'يوسف']):
         return {
             "title": "⚡ مصممي ومطوري هو المهندس Youssef Nasr",
-            "text": "أنا منظومة **JOO AI DARK** المتطورة للأمن السيبراني واختبار الاختراق الحقيقي.\nتم تصميمي وبرمجتي وتطويري بالكامل على يد **المهندس ومختبر الاختراق: Youssef Nasr (يوسف نصر)** لتقديم فحص تقني حقيقي واكتشاف نقاط الضعف بدون بيانات مزيفة.",
+            "text": "أنا منظومة **JOO AI DARK** المتطورة للأمن السيبراني واختبار الاختراق الحقيقي.\nتم تصميمي وبرمجتي وتطويري بالكامل بواسطة المهندس **Youssef Nasr** لتقديم فحص تقني حقيقي واكتشاف نقاط الضعف بدون بيانات مزيفة.",
             "badge": "CREATOR: YOUSSEF NASR",
             "code": "ARCHITECT: YOUSSEF NASR\nSYSTEM: JOO AI DARK V3.5\nCLOUD: FIREBASE FIRESTORE\nAI CORE: REAL TIME AUDIT"
         }

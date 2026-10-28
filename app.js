@@ -2,6 +2,7 @@
  * ======================================================================
  * JOO AI DARK - Modern Cyber Intelligence Chat Application
  * Clean Minimalist Architecture // Real-time Socket & HTTP Telemetry
+ * Voice Chat (STT) + Text-to-Speech (TTS) Message Reader
  * Developer: Youssef Nasr
  * ======================================================================
  */
@@ -13,6 +14,7 @@ const welcomeHero = document.getElementById('welcomeHero');
 const chatForm = document.getElementById('chatForm');
 const messageInput = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
+const micBtn = document.getElementById('micBtn');
 const typingIndicator = document.getElementById('typingIndicator');
 const typingText = document.getElementById('typingText');
 const clearChatBtn = document.getElementById('clearChatBtn');
@@ -108,6 +110,10 @@ async function sendMessage(userText) {
             <div class="message-meta">
                 <span>${timeNow}</span>
                 <i class="fa-solid fa-check text-emerald"></i>
+                <div class="message-actions-bar">
+                    <button class="msg-tool-btn" onclick="speakMessageText(this)" title="قراءة الرسالة بالصوت"><i class="fa-solid fa-volume-high"></i></button>
+                    <button class="msg-tool-btn" onclick="copyMessageText(this)" title="نسخ الرسالة"><i class="fa-solid fa-copy"></i></button>
+                </div>
             </div>
         </div>
         <div class="avatar-box user-avatar">
@@ -228,7 +234,11 @@ function renderAIResponse(resData, saveLocally = true) {
             </div>
             <div class="message-meta">
                 <span>${timeNow}</span>
-                <span>Youssef Nasr Engine</span>
+                <span>Dev: Youssef Nasr</span>
+                <div class="message-actions-bar">
+                    <button class="msg-tool-btn speak-btn" onclick="speakMessageText(this)" title="قراءة الرسالة بالصوت"><i class="fa-solid fa-volume-high"></i></button>
+                    <button class="msg-tool-btn copy-btn" onclick="copyMessageText(this)" title="نسخ نص الرسالة"><i class="fa-solid fa-copy"></i></button>
+                </div>
             </div>
         </div>
     `;
@@ -242,7 +252,7 @@ function generateFallbackResponse(userMsg) {
     if (msg.includes('صممك') || msg.includes('عملك') || msg.includes('برمجك') || msg.includes('مين انت') || msg.includes('youssef') || msg.includes('nasr') || msg.includes('يوسف')) {
         return {
             title: "⚡ مطوري ومصممي هو المهندس Youssef Nasr",
-            text: "أنا **JOO AI DARK**، منظومة الأمن السيبراني المتطورة لاختبار الاختراق وفحص السيرفرات الحقيقية.\nتم تصميمي وبرمجتي وتطويري بالكامل على يد **المهندس Youssef Nasr (يوسف نصر)**.",
+            text: "أنا **JOO AI DARK**، منظومة الأمن السيبراني المتطورة لاختبار الاختراق وفحص السيرفرات الحقيقية.\nتم تصميمي وبرمجتي وتطويري بالكامل بواسطة المهندس **Youssef Nasr**.",
             badge: "CREATOR: YOUSSEF NASR",
             code: "ARCHITECT: YOUSSEF NASR\nSYSTEM: JOO AI DARK V3.5\nMODE: AUTHENTIC AUDIT"
         };
@@ -255,8 +265,134 @@ function generateFallbackResponse(userMsg) {
     };
 }
 
+// Speech Synthesis (Text-to-Speech: Read message aloud)
+window.speakMessageText = function(btn) {
+    const contentWrapper = btn.closest('.message-content-wrapper');
+    if (!contentWrapper) return;
+    const textEl = contentWrapper.querySelector('.result-question, p');
+    if (!textEl) return;
+
+    const rawText = (textEl.innerText || textEl.textContent || '').trim();
+    if (!rawText) return;
+
+    if (!('speechSynthesis' in window)) {
+        showToast('المتصفح لا يدعم القراءة الصوتية');
+        return;
+    }
+
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        btn.classList.remove('speaking');
+        btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(rawText);
+    utterance.lang = 'ar-SA';
+    utterance.rate = 1.0;
+    utterance.pitch = 0.95;
+
+    try {
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
+        if (arabicVoice) utterance.voice = arabicVoice;
+    } catch (e) {}
+
+    btn.classList.add('speaking');
+    btn.innerHTML = '<i class="fa-solid fa-stop text-emerald"></i>';
+
+    utterance.onend = () => {
+        btn.classList.remove('speaking');
+        btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+    };
+    utterance.onerror = () => {
+        btn.classList.remove('speaking');
+        btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+    };
+
+    window.speechSynthesis.speak(utterance);
+};
+
+// Copy message text
+window.copyMessageText = function(btn) {
+    const contentWrapper = btn.closest('.message-content-wrapper');
+    if (!contentWrapper) return;
+    const textEl = contentWrapper.querySelector('.result-question, p');
+    if (!textEl) return;
+    navigator.clipboard.writeText(textEl.innerText || textEl.textContent);
+    btn.innerHTML = '<i class="fa-solid fa-check text-emerald"></i>';
+    showToast('تم نسخ نص الرسالة');
+    setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-copy"></i>', 2000);
+};
+
+// Voice Input / Speech-to-Text (دردشة صوتية)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isVoiceRecording = false;
+
+if (SpeechRecognition && micBtn) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'ar-EG';
+
+    recognition.onstart = () => {
+        isVoiceRecording = true;
+        micBtn.classList.add('recording');
+        messageInput.placeholder = 'جاري الاستماع... تحدث الآن';
+        showToast('جاري الاستماع لصوتك...');
+    };
+
+    recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+        }
+        messageInput.value = transcript;
+        messageInput.style.height = 'auto';
+        messageInput.style.height = Math.min(messageInput.scrollHeight, 160) + 'px';
+    };
+
+    recognition.onend = () => {
+        isVoiceRecording = false;
+        micBtn.classList.remove('recording');
+        messageInput.placeholder = 'اكتب أمرك أو ضع رابط أي موقع أو اضغط المايك للتحدث بالصوت...';
+        if (messageInput.value.trim().length > 0) {
+            showToast('تم التقاط صوتك! اضغط إرسال');
+        }
+    };
+
+    recognition.onerror = (e) => {
+        isVoiceRecording = false;
+        micBtn.classList.remove('recording');
+        messageInput.placeholder = 'اكتب أمرك أو ضع رابط أي موقع أو اضغط المايك للتحدث بالصوت...';
+        if (e.error === 'not-allowed') {
+            showToast('يرجى السماح بصلاحية المايكروفون في المتصفح');
+        }
+    };
+
+    micBtn.addEventListener('click', () => {
+        if (isVoiceRecording) {
+            recognition.stop();
+        } else {
+            try {
+                recognition.start();
+            } catch (err) {
+                console.warn(err);
+            }
+        }
+    });
+} else if (micBtn) {
+    micBtn.addEventListener('click', () => {
+        showToast('متصفحك لا يدعم التعرف الصوتي المباشر. استخدم Google Chrome أو Microsoft Edge');
+    });
+}
+
 // Clear Chat
 clearChatBtn.addEventListener('click', async () => {
+    if (window.speechSynthesis && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
     localStorage.removeItem('joo_chat_history');
     if (window.JooFirebase && window.JooFirebase.isConnected()) {
         window.JooFirebase.clearChatHistory();
@@ -268,7 +404,7 @@ clearChatBtn.addEventListener('click', async () => {
     chatHistory.innerHTML = `
         <div class="system-message-banner">
             <i class="fa-solid fa-check text-emerald"></i>
-            <span>تم مسح المحادثة وتصفير السجلات السحابية بنجاح.</span>
+            <span>تم مسح المحادثة وتصفير السجلات بنجاح.</span>
         </div>
     `;
     showToast('تم مسح المحادثة وتصفير السجلات');
@@ -403,6 +539,10 @@ async function loadChatHistory() {
                         <div class="message-meta">
                             <span>${msg.created_at || ''}</span>
                             <i class="fa-solid fa-check text-emerald"></i>
+                            <div class="message-actions-bar">
+                                <button class="msg-tool-btn" onclick="speakMessageText(this)" title="قراءة الرسالة بالصوت"><i class="fa-solid fa-volume-high"></i></button>
+                                <button class="msg-tool-btn" onclick="copyMessageText(this)" title="نسخ الرسالة"><i class="fa-solid fa-copy"></i></button>
+                            </div>
                         </div>
                     </div>
                     <div class="avatar-box user-avatar">

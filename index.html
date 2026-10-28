@@ -22,7 +22,7 @@
                 </div>
                 <div class="brand-details">
                     <h1>JOO AI <span class="accent-text">DARK</span></h1>
-                    <span class="developer-tag">المطور: Youssef Nasr</span>
+                    <span class="developer-tag">Dev: Youssef Nasr</span>
                 </div>
             </div>
 
@@ -60,36 +60,36 @@
                     <p class="hero-subtitle">
                         منظومة الذكاء الاصطناعي المتخصصة في اختبار الاختراق وفحص السيرفرات الحقيقية.
                         <br>
-                        تم التصميم والبرمجة بالكامل بواسطة <strong>المهندس Youssef Nasr</strong>
+                        Architect: <strong>Youssef Nasr</strong>
                     </p>
 
                     <div class="quick-prompts-grid">
-                        <button class="prompt-chip" onclick="sendPrompt('افحص أمان موقع https://google.com واكشف الهيدرز والـ IP الحقيقي')">
-                            <i class="fa-solid fa-globe text-emerald"></i>
+                        <button class="prompt-chip" onclick="sendPrompt('افحص أمان موقعي واكشف الـ IPs الحقيقية وشهادة التشفير وخادم الويب')">
+                            <i class="fa-solid fa-shield-virus text-emerald"></i>
                             <div class="prompt-info">
-                                <span class="p-title">فحص موقع google.com</span>
+                                <span class="p-title">فحص أمان موقع وسيرفر</span>
                                 <span class="p-desc">كشف الـ IP الفعلي وشهادة SSL/TLS وخادم الويب</span>
                             </div>
                         </button>
-                        <button class="prompt-chip" onclick="sendPrompt('افحص أمان موقع https://github.com واكشف الـ HSTS والـ CSP')">
-                            <i class="fa-solid fa-lock text-emerald"></i>
+                        <button class="prompt-chip" onclick="sendPrompt('حلل ثغرات الـ Web Security مثل SQL Injection و XSS وطرق حمايتها')">
+                            <i class="fa-solid fa-code text-emerald"></i>
                             <div class="prompt-info">
-                                <span class="p-title">فحص موقع github.com</span>
-                                <span class="p-desc">تحليل دفاعات إجبار التشفير وحماية الـ XSS</span>
+                                <span class="p-title">دليل اكتشاف وتأمين الثغرات</span>
+                                <span class="p-desc">شرح واختبار ثغرات السيرفرات وقواعد البيانات</span>
                             </div>
                         </button>
                         <button class="prompt-chip" onclick="sendPrompt('مين اللي صممك وبرمجك؟')">
-                            <i class="fa-solid fa-user-ninja text-emerald"></i>
+                            <i class="fa-solid fa-user-shield text-emerald"></i>
                             <div class="prompt-info">
                                 <span class="p-title">من هو المطور؟</span>
-                                <span class="p-desc">التعرف على صانع ومطور النظام Youssef Nasr</span>
+                                <span class="p-desc">التعرف على مطور النظام Youssef Nasr</span>
                             </div>
                         </button>
-                        <button class="prompt-chip" onclick="sendPrompt('اشرحلي إزاي أكتشف ثغرات الـ SQL Injection وأمن السيرفر')">
-                            <i class="fa-solid fa-code text-emerald"></i>
+                        <button class="prompt-chip" onclick="sendPrompt('اشرحلي إزاي أختبر قوة كلمات المرور والهاشات وفك التشفير')">
+                            <i class="fa-solid fa-key text-emerald"></i>
                             <div class="prompt-info">
-                                <span class="p-title">شرح واختبار ثغرات</span>
-                                <span class="p-desc">دليل اختراق وحماية لقواعد البيانات والسيرفرات</span>
+                                <span class="p-title">تحليل الهاشات والتشفير</span>
+                                <span class="p-desc">حساب الإنتروبي وتوليد وفك هاشات SHA-256 و MD5</span>
                             </div>
                         </button>
                     </div>
@@ -109,9 +109,12 @@
         <footer class="chat-footer">
             <div class="input-wrapper">
                 <form class="chat-form" id="chatForm">
+                    <button type="button" class="mic-btn" id="micBtn" title="تحدث بالصوت (دردشة صوتية)">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
                     <textarea 
                         id="messageInput" 
-                        placeholder="اكتب سؤالك أو ضع رابط أي موقع (مثال: facebook.com) لتبدأ الفحص الحقيقي..." 
+                        placeholder="اكتب أمرك أو ضع رابط أي موقع أو اضغط المايك للتحدث بالصوت..." 
                         rows="1"
                         dir="auto"></textarea>
                     <button type="submit" class="send-btn" id="sendBtn" title="إرسال الأمر">
@@ -119,7 +122,7 @@
                     </button>
                 </form>
                 <div class="footer-caption">
-                    <span>JOO AI DARK • فحص سيبراني حقيقي وسحابي • تصميم وتطوير <strong>Youssef Nasr</strong></span>
+                    <span>JOO AI DARK • Advanced Cyber Intelligence • Dev: <strong>Youssef Nasr</strong></span>
                 </div>
             </div>
         </footer>
