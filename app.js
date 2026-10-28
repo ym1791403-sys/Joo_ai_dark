@@ -197,9 +197,10 @@ function renderAIResponse(resData, saveLocally = true) {
 
     // Simple markdown-to-HTML parser for formatting
     let formattedText = escapeHTML(resData.text || '')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="bidi-term">$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`(.*?)`/g, '<code style="background: #0d1117; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); color: #7ee787;">$1</code>')
+        .replace(/`(.*?)`/g, '<code class="inline-code" style="background: #0d1117; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); color: #7ee787; direction: ltr; unicode-bidi: isolate; display: inline-block; margin: 0 2px;">$1</code>')
+        .replace(/\n\n/g, '<div class="msg-para-spacer"></div>')
         .replace(/\n/g, '<br>');
 
     aiRow.innerHTML = `
@@ -265,8 +266,114 @@ function generateFallbackResponse(userMsg) {
     };
 }
 
-// Speech Synthesis (Text-to-Speech: Read message aloud)
+// ======================================================================
+// Arabic Text-to-Speech Engine (High-Clarity, Natural Pacing)
+// Optimized for clear enunciation, relaxed speech rate, and native voices
+// ======================================================================
+
+let bestArabicVoice = null;
+
+function loadBestArabicVoice() {
+    if (!('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+
+    // Filter Arabic voices by language tag or name
+    const arVoices = voices.filter(v => {
+        const lang = (v.lang || '').toLowerCase();
+        const name = (v.name || '').toLowerCase();
+        return lang.startsWith('ar') || name.includes('arabic') || name.includes('عربي') ||
+               /hoda|salma|shakir|naayf|laila|tarik|maged/i.test(name);
+    });
+
+    if (arVoices.length > 0) {
+        // Priority 1: Natural / Online Arabic voices (Microsoft Online Natural, Google Arabic)
+        const naturalVoice = arVoices.find(v => /natural|online/i.test(v.name));
+        if (naturalVoice) return naturalVoice;
+
+        // Priority 2: Egyptian Arabic female voices (Hoda, Salma, Laila)
+        const femaleVoice = arVoices.find(v => /hoda|salma|laila/i.test(v.name));
+        if (femaleVoice) return femaleVoice;
+
+        // Priority 3: Egyptian Arabic dialect (ar-EG)
+        const egVoice = arVoices.find(v => (v.lang || '').toLowerCase().includes('eg'));
+        if (egVoice) return egVoice;
+
+        // Priority 4: Any Arabic voice
+        return arVoices[0];
+    }
+    return null;
+}
+
+// Preload voices
+if ('speechSynthesis' in window) {
+    bestArabicVoice = loadBestArabicVoice();
+    window.speechSynthesis.onvoiceschanged = () => {
+        bestArabicVoice = loadBestArabicVoice();
+    };
+}
+
+// Clean and prepare text for speech synthesis so words don't collide or rush
+function prepareCleanSpeechText(text) {
+    if (!text) return '';
+    let clean = text;
+
+    // 1. Remove HTML tags
+    clean = clean.replace(/<[^>]+>/g, ' ');
+
+    // 2. Remove markdown asterisks, backticks, hashes
+    clean = clean.replace(/\*\*([^*]+)\*\*/g, ' $1 ');
+    clean = clean.replace(/\*([^*]+)\*/g, ' $1 ');
+    clean = clean.replace(/`([^`]+)`/g, ' $1 ');
+    clean = clean.replace(/#{1,6}\s*/g, '');
+
+    // 3. Remove emojis and cyber icons that cause speech synthesis to stutter
+    clean = clean.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}⚡💀⚠️🔒🔓🛡️📋🔊🎙️✨✅❌]/gu, '');
+
+    // 4. Convert bullets into natural pauses (Arabic comma)
+    clean = clean.replace(/^\s*[-*•]\s+/gm, '، ');
+
+    // 5. Convert colons and newlines into natural breathing pauses
+    clean = clean.replace(/:\s*\n/g, '، ');
+    clean = clean.replace(/\n+/g, ' . ');
+    clean = clean.replace(/[:;]/g, '، ');
+
+    // 6. Simplify URLs for speech
+    clean = clean.replace(/https?:\/\/[^\s]+/g, 'رابط موقع');
+
+    // 7. Space out English words and numbers to avoid phonetic fusion with Arabic
+    clean = clean.replace(/([a-zA-Z0-9]+)/g, ' $1 ');
+
+    // 8. Clean redundant punctuation
+    clean = clean.replace(/\s+/g, ' ');
+    clean = clean.replace(/(\s*،\s*)+/g, ' ، ');
+    clean = clean.replace(/(\s*\.\s*)+/g, ' . ');
+
+    return clean.trim();
+}
+
+// Speech Synthesis (Text-to-Speech: Read message aloud calmly and clearly)
 window.speakMessageText = function(btn) {
+    if (!('speechSynthesis' in window)) {
+        showToast('المتصفح لا يدعم القراءة الصوتية');
+        return;
+    }
+
+    // Toggle stop if already speaking this message
+    if (btn.classList.contains('speaking')) {
+        window.speechSynthesis.cancel();
+        btn.classList.remove('speaking');
+        btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        return;
+    }
+
+    // Stop previous speech and reset all speaking buttons
+    window.speechSynthesis.cancel();
+    document.querySelectorAll('.msg-tool-btn.speaking').forEach(b => {
+        b.classList.remove('speaking');
+        b.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+    });
+
     const contentWrapper = btn.closest('.message-content-wrapper');
     if (!contentWrapper) return;
     const textEl = contentWrapper.querySelector('.result-question, p');
@@ -275,28 +382,25 @@ window.speakMessageText = function(btn) {
     const rawText = (textEl.innerText || textEl.textContent || '').trim();
     if (!rawText) return;
 
-    if (!('speechSynthesis' in window)) {
-        showToast('المتصفح لا يدعم القراءة الصوتية');
-        return;
+    const cleanSpeech = prepareCleanSpeechText(rawText);
+    if (!cleanSpeech) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+
+    if (!bestArabicVoice) {
+        bestArabicVoice = loadBestArabicVoice();
     }
 
-    if (window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-        btn.classList.remove('speaking');
-        btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
-        return;
+    if (bestArabicVoice) {
+        utterance.voice = bestArabicVoice;
+        utterance.lang = bestArabicVoice.lang || 'ar-EG';
+    } else {
+        utterance.lang = 'ar-EG';
     }
 
-    const utterance = new SpeechSynthesisUtterance(rawText);
-    utterance.lang = 'ar-SA';
-    utterance.rate = 1.0;
-    utterance.pitch = 0.95;
-
-    try {
-        const voices = window.speechSynthesis.getVoices();
-        const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
-        if (arabicVoice) utterance.voice = arabicVoice;
-    } catch (e) {}
+    // Calm, slow, clear pronunciation (0.84 rate is ideal for distinct Arabic enunciation)
+    utterance.rate = 0.84;
+    utterance.pitch = 1.0;
 
     btn.classList.add('speaking');
     btn.innerHTML = '<i class="fa-solid fa-stop text-emerald"></i>';
@@ -310,7 +414,10 @@ window.speakMessageText = function(btn) {
         btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
     };
 
-    window.speechSynthesis.speak(utterance);
+    // Small delay before speak() to allow previous cancel() to flush on Chromium
+    setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+    }, 60);
 };
 
 // Copy message text
