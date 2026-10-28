@@ -44,7 +44,9 @@ try {
     }
 } catch (e) {}
 
-let isProcessing = false;
+let isSendingMessage = false;
+let lastSubmittedText = '';
+let lastSubmittedTimestamp = 0;
 
 // Toast Notification
 function showToast(msg) {
@@ -60,42 +62,90 @@ messageInput.addEventListener('input', function() {
     this.style.height = Math.min(this.scrollHeight, 160) + 'px';
 });
 
+function submitUserMessage() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    const now = Date.now();
+    // Strict deduplication: block if currently sending OR identical text within 1200ms
+    if (isSendingMessage || (text === lastSubmittedText && now - lastSubmittedTimestamp < 1200)) {
+        console.warn("Prevented duplicate submission attempt");
+        return;
+    }
+
+    lastSubmittedText = text;
+    lastSubmittedTimestamp = now;
+    isSendingMessage = true;
+
+    // Immediately clear input and reset height synchronously so no second event can grab it
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+
+    // Disable send button temporarily
+    if (sendBtn) sendBtn.disabled = true;
+
+    sendMessage(text);
+}
+
+// Keydown Enter on textarea
 messageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        chatForm.dispatchEvent(new Event('submit'));
+        submitUserMessage();
     }
 });
 
 // Chat Form Submit
 chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const text = messageInput.value.trim();
-    if (!text || isProcessing) return;
-    sendMessage(text);
-    messageInput.value = '';
-    messageInput.style.height = 'auto';
+    submitUserMessage();
 });
 
 // Quick prompt pill - Globally available
 window.sendPrompt = function(text) {
-    isProcessing = false;
+    if (!text) return;
+    const now = Date.now();
+    if (isSendingMessage || (text === lastSubmittedText && now - lastSubmittedTimestamp < 1200)) {
+        return;
+    }
+    lastSubmittedText = text;
+    lastSubmittedTimestamp = now;
+    isSendingMessage = true;
+    if (sendBtn) sendBtn.disabled = true;
     sendMessage(text);
 };
 
 // Send Message
 async function sendMessage(userText) {
-    if (!userText) return;
-    isProcessing = true;
+    if (!userText || !userText.trim()) {
+        isSendingMessage = false;
+        if (sendBtn) sendBtn.disabled = false;
+        return;
+    }
+
+    const cleanUserText = userText.trim();
+
+    // DOM-level deduplication: If last child in chatHistory is already an identical user message, do not duplicate
+    const lastRow = chatHistory.lastElementChild;
+    if (lastRow && lastRow.classList.contains('user-row')) {
+        const lastP = lastRow.querySelector('p');
+        if (lastP && lastP.textContent.trim() === cleanUserText) {
+            console.warn("Duplicate user message prevented");
+            isSendingMessage = false;
+            if (sendBtn) sendBtn.disabled = false;
+            return;
+        }
+    }
 
     // Remove welcome greeting on first message
     const hero = document.getElementById('welcomeHero');
     if (hero) hero.remove();
 
     const unlockTimer = setTimeout(() => {
-        isProcessing = false;
+        isSendingMessage = false;
+        if (sendBtn) sendBtn.disabled = false;
         if (typingIndicator) typingIndicator.classList.add('hidden');
-    }, 14000);
+    }, 15000);
 
     const timeNow = getCurrentTime();
 
@@ -105,7 +155,7 @@ async function sendMessage(userText) {
     userRow.innerHTML = `
         <div class="message-content-wrapper">
             <div class="message-bubble user-bubble">
-                <p>${escapeHTML(userText)}</p>
+                <p>${escapeHTML(cleanUserText)}</p>
             </div>
             <div class="message-meta">
                 <span>${timeNow}</span>
@@ -130,7 +180,7 @@ async function sendMessage(userText) {
         scrollToBottom();
     }
 
-    appendLocalHistory({ role: 'user', message: userText, created_at: timeNow });
+    appendLocalHistory({ role: 'user', message: cleanUserText, created_at: timeNow });
 
     const localApiKey = localStorage.getItem('joo_api_key') || '';
     const localProvider = localStorage.getItem('joo_ai_provider') || 'gemini';
@@ -142,7 +192,7 @@ async function sendMessage(userText) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                message: userText,
+                message: cleanUserText,
                 api_key: localApiKey,
                 ai_provider: localProvider
             })
@@ -157,7 +207,7 @@ async function sendMessage(userText) {
 
     try {
         if (!data || !data.text) {
-            data = generateFallbackResponse(userText);
+            data = generateFallbackResponse(cleanUserText);
         }
 
         if (typingIndicator) typingIndicator.classList.add('hidden');
@@ -174,12 +224,25 @@ async function sendMessage(userText) {
         });
     } finally {
         clearTimeout(unlockTimer);
-        isProcessing = false;
+        isSendingMessage = false;
+        if (sendBtn) sendBtn.disabled = false;
     }
 }
 
 // Render AI Response
 function renderAIResponse(resData, saveLocally = true) {
+    if (!resData || !resData.text) return;
+
+    // DOM-level AI deduplication: If last element in chatHistory is already an identical AI message, do not duplicate
+    const lastAiRow = chatHistory.lastElementChild;
+    if (lastAiRow && lastAiRow.classList.contains('ai-row')) {
+        const lastAiText = lastAiRow.querySelector('.result-question');
+        if (lastAiText && lastAiText.innerText.trim() === resData.text.trim()) {
+            console.warn("Duplicate AI response prevented");
+            return;
+        }
+    }
+
     if (saveLocally) {
         appendLocalHistory({
             role: 'ai',
@@ -597,14 +660,23 @@ if (runCryptoBtn) {
 
 // History & Persistence
 function appendLocalHistory(msgObj) {
+    if (!msgObj || !msgObj.message) return;
+
     try {
         const hist = JSON.parse(localStorage.getItem('joo_chat_history') || '[]');
+        if (hist.length > 0) {
+            const last = hist[hist.length - 1];
+            // Deduplication: Never save identical consecutive message in history
+            if (last.role === msgObj.role && (last.message || '').trim() === (msgObj.message || '').trim()) {
+                return;
+            }
+        }
         hist.push(msgObj);
         if (hist.length > 50) hist.shift();
         localStorage.setItem('joo_chat_history', JSON.stringify(hist));
     } catch(e) {}
 
-    // Cloud sync with Firebase Firestore
+    // Cloud sync with Firebase
     try {
         if (window.JooFirebase && window.JooFirebase.isConnected()) {
             window.JooFirebase.saveMessage(msgObj);
@@ -613,6 +685,10 @@ function appendLocalHistory(msgObj) {
 }
 
 async function loadChatHistory() {
+    // If messages are already displayed in chatHistory, do not reload or duplicate
+    const existingCount = chatHistory.querySelectorAll('.message-row').length;
+    if (existingCount > 0) return;
+
     let messages = [];
 
     // 1. Firebase Cloud
@@ -634,14 +710,21 @@ async function loadChatHistory() {
         const hero = document.getElementById('welcomeHero');
         if (hero) hero.remove();
 
+        let lastSeenText = '';
         messages.forEach(msg => {
+            const content = (msg.message || '').trim();
+            if (!content) return;
+            // Deduplicate consecutive identical messages from database
+            if (content === lastSeenText) return;
+            lastSeenText = content;
+
             if (msg.role === 'user') {
                 const userRow = document.createElement('div');
                 userRow.className = 'message-row user-row';
                 userRow.innerHTML = `
                     <div class="message-content-wrapper">
                         <div class="message-bubble user-bubble">
-                            <p>${escapeHTML(msg.message)}</p>
+                            <p>${escapeHTML(content)}</p>
                         </div>
                         <div class="message-meta">
                             <span>${msg.created_at || ''}</span>
@@ -660,7 +743,7 @@ async function loadChatHistory() {
             } else {
                 renderAIResponse({
                     title: msg.title || 'JOO AI DARK',
-                    text: msg.message,
+                    text: content,
                     badge: msg.badge || 'RECORDED INTEL',
                     code: msg.code || ''
                 }, false);
