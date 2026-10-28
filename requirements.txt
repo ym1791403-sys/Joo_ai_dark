@@ -1,0 +1,3 @@
+# JOO AI DARK - Zero-dependency Python server
+# Built with Python standard library (http.server, sqlite3, ssl, urllib)
+# No heavy third-party packages required!
