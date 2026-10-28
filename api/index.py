@@ -243,7 +243,8 @@ class handler(BaseHTTPRequestHandler):
         except Exception:
             req_json = {}
 
-        if url_path == '/api/chat':
+        # Smart Route: Chat request
+        if url_path == '/api/chat' or 'message' in req_json:
             user_msg = req_json.get('message', '').strip()
             target = req_json.get('target', 'google.com').strip()
             client_api_key = req_json.get('api_key')
@@ -271,7 +272,7 @@ class handler(BaseHTTPRequestHandler):
             self._send_json(ai_reply)
             return
 
-        elif url_path == '/api/scan':
+        elif url_path == '/api/scan' or ('target' in req_json and 'message' not in req_json):
             target = req_json.get('target', 'https://google.com')
             host, full_url = clean_target_host(target)
             dns = run_real_dns_lookup(host)

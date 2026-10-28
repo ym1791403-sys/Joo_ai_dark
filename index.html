@@ -13,7 +13,8 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Background cyber grid & glow effects -->
+    <!-- Background cyber grid & scanlines -->
+    <div class="crt-scanlines"></div>
     <div class="cyber-bg-overlay"></div>
     <div class="cyber-grid"></div>
 
@@ -56,31 +57,31 @@
             </div>
 
             <!-- Quick Action Tools / Modes -->
-            <div class="section-heading">أدوات الفحص والهاكينج الحقيقية</div>
+            <div class="section-heading">أدوات الهاكينج والعمليات الحية</div>
             <div class="tools-grid">
                 <button class="tool-btn active" data-action="headers">
-                    <i class="fa-solid fa-shield-virus"></i>
-                    <span>فحص الـ Headers</span>
+                    <i class="fa-solid fa-terminal text-green"></i>
+                    <span>./scan_headers</span>
                 </button>
                 <button class="tool-btn" data-action="ssl">
-                    <i class="fa-solid fa-lock"></i>
-                    <span>فحص الـ SSL</span>
+                    <i class="fa-solid fa-lock text-green"></i>
+                    <span>./audit_ssl:443</span>
                 </button>
                 <button class="tool-btn" data-action="dns">
-                    <i class="fa-solid fa-network-wired"></i>
-                    <span>كشف الـ DNS & IPs</span>
+                    <i class="fa-solid fa-network-wired text-green"></i>
+                    <span>./recon_dns_ips</span>
                 </button>
                 <button class="tool-btn" data-action="crypto">
-                    <i class="fa-solid fa-key"></i>
-                    <span>توليد وفك الهاشات</span>
+                    <i class="fa-solid fa-key text-green"></i>
+                    <span>./crack_hashes</span>
                 </button>
                 <button class="tool-btn" data-action="entropy">
-                    <i class="fa-solid fa-gauge-high"></i>
-                    <span>اختبار قوة الباسورد</span>
+                    <i class="fa-solid fa-gauge-high text-green"></i>
+                    <span>./brute_entropy</span>
                 </button>
                 <button class="tool-btn" data-action="dump">
-                    <i class="fa-solid fa-database"></i>
-                    <span>سحب الداتا (محاكاة)</span>
+                    <i class="fa-solid fa-database text-green"></i>
+                    <span>./dump_shadow</span>
                 </button>
             </div>
 
@@ -264,16 +265,16 @@
             <!-- Bottom Floating Quick Suggestions -->
             <div class="quick-prompts-bar">
                 <button class="quick-prompt-pill" onclick="sendPrompt('اسحب صلاحيات الـ Root وفك تشفير الـ Shadow')">
-                    <i class="fa-solid fa-skull text-danger"></i> اسحب صلاحيات الـ Root
+                    <i class="fa-solid fa-terminal text-green"></i> ./dump_shadow.sh --all
                 </button>
                 <button class="quick-prompt-pill" onclick="sendPrompt('افحص الثغرات الحقيقية والتسريبات في السيرفر المستهدف')">
-                    <i class="fa-solid fa-shield-virus text-cyan"></i> كشف ثغرات السيرفر
+                    <i class="fa-solid fa-satellite-dish text-green"></i> nmap -sV --script vuln
                 </button>
                 <button class="quick-prompt-pill" onclick="sendPrompt('تجاوز جدار الحماية والـ EDR بدون ترك أي أثر')">
-                    <i class="fa-solid fa-ghost"></i> وضع الشبح (Bypass EDR)
+                    <i class="fa-solid fa-ghost text-green"></i> ./bypass_waf.py --evade
                 </button>
                 <button class="quick-prompt-pill" onclick="sendPrompt('استخرج مفاتيح التشفير والـ Private Keys السرية')">
-                    <i class="fa-solid fa-key text-warning"></i> استخراج مفاتيح التشفير
+                    <i class="fa-solid fa-key text-green"></i> ./exfiltrate_keys.sh
                 </button>
             </div>
 
@@ -283,13 +284,21 @@
                     <button type="button" class="tool-action-btn" id="attachFileBtn" title="رفع ملف فحص / Payloads">
                         <i class="fa-solid fa-paperclip"></i>
                     </button>
+                    <span class="terminal-caret-label">root@dark:~#</span>
                     <div class="input-wrapper">
                         <textarea 
                             id="messageInput" 
-                            placeholder="اكتب أمرك لـ JOO AI DARK (مثال: اسحب الـ Root، دمر الـ Logs، افحص التشفير...)" 
+                            placeholder="اكتب أمرك هنا (مثال: اسحب الـ Root، افحص البورتات، كسر التشفير...)" 
                             rows="1"
                             dir="auto"></textarea>
                     </div>
+                    <button type="button" class="tool-action-btn terminal-trigger" id="miniTerminalBtn" title="تشغيل هجوم تفاعلي">
+                        <i class="fa-solid fa-skull"></i>
+                    </button>
+                    <button type="submit" class="send-btn" id="sendBtn" title="إرسال الأمر">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
                     <button type="button" class="tool-action-btn terminal-trigger" id="miniTerminalBtn" title="تشغيل هجوم تفاعلي">
                         <i class="fa-solid fa-skull"></i>
                     </button>
