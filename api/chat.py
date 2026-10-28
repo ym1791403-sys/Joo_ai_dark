@@ -80,12 +80,19 @@ class handler(BaseHTTPRequestHandler):
 
         user_msg = req_json.get('message', '').strip()
         target = req_json.get('target', 'google.com').strip()
+        api_key = req_json.get('api_key', '').strip()
+        ai_provider = req_json.get('ai_provider', 'gemini').strip()
         host = clean_target_host(target)
 
         # 1. Try querying Gemini AI Model
         ai_reply = None
         try:
-            ai_reply = ai_engine.generate_ai_hacker_response(user_msg, host)
+            ai_reply = ai_engine.generate_ai_hacker_response(
+                user_msg, 
+                host, 
+                explicit_key=api_key if api_key else None, 
+                explicit_provider=ai_provider
+            )
         except Exception as e:
             print(f"[-] AI query error: {e}")
 

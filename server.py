@@ -402,7 +402,14 @@ class CyberHttpHandler(http.server.SimpleHTTPRequestHandler):
             database.save_message(role='user', message=user_msg)
 
             # 2. Try querying Live AI model (Gemini / Groq / OpenAI)
-            ai_reply = ai_engine.generate_ai_hacker_response(user_msg, host)
+            client_api_key = req_json.get('api_key')
+            client_provider = req_json.get('ai_provider')
+            ai_reply = ai_engine.generate_ai_hacker_response(
+                user_msg, 
+                host, 
+                explicit_key=client_api_key if client_api_key else None, 
+                explicit_provider=client_provider
+            )
 
             # 3. Fallback to built-in offline cyber intelligence if no external API configured
             if not ai_reply:

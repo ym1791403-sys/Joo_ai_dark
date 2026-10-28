@@ -258,7 +258,12 @@ class handler(BaseHTTPRequestHandler):
 
             database.save_message(role='user', message=user_msg)
 
-            ai_reply = ai_engine.generate_ai_hacker_response(user_msg, host)
+            ai_reply = ai_engine.generate_ai_hacker_response(
+                user_msg, 
+                host, 
+                explicit_key=client_api_key if client_api_key else None, 
+                explicit_provider=client_provider
+            )
             if not ai_reply:
                 ai_reply = generate_hacker_chat_reply(user_msg, target)
 
