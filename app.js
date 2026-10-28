@@ -402,7 +402,14 @@ function generateLocalHackerFallback(userMsg, target) {
     const msg = (userMsg || '').toLowerCase();
     const host = target || 'target-sec.vault';
 
-    if (msg.includes('root') || msg.includes('shadow') || msg.includes('شبح') || msg.includes('صلاحيات') || msg.includes('اسحب')) {
+    if (msg.includes('صممك') || msg.includes('عملك') || msg.includes('برمجك') || msg.includes('مين انت') || msg.includes('صانعك') || msg.includes('صاحبك') || msg.includes('youssef') || msg.includes('nasr') || msg.includes('يوسف')) {
+        return {
+            title: "⚡ مطوري ومصممي هو المهندس Youssef Nasr",
+            text: `أنا منظومة <strong>JOO AI DARK</strong> المتطورة.\nتم تصميمي وبرمجتي وتطويري بالكامل بواسطة المهندس والمبرمج <strong>Youssef Nasr</strong> (يوسف نصر) لتقديم اختبارات اختراق حقيقية وفحص أمني شامل واكتشاف الثغرات في السيرفرات.`,
+            badge: "CREATOR: YOUSSEF NASR",
+            code: `CREATOR: YOUSSEF NASR\nPROJECT: JOO AI DARK\nSYSTEM: REAL OFFENSIVE CYBER PLATFORM\nVERSION: 3.5.0-SEC`
+        };
+    } else if (msg.includes('root') || msg.includes('shadow') || msg.includes('شبح') || msg.includes('صلاحيات') || msg.includes('اسحب')) {
         return {
             title: "💀 تم اختراق الكيرنل واستخراج الـ Root Shell (UID 0)",
             text: `أنا جوه السيرفر <code>${host}</code> بصلاحيات الـ Root المطلقة (UID 0: root).\nتم سحب ملف <code>/etc/shadow</code> وفك الهاشات المشفرة، وتم تصفير سجلات auth.log بدون إثارة أي تنبيهات دفاعية.`,

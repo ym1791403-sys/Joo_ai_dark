@@ -39,7 +39,14 @@ def get_fallback_hacker_response(user_msg, target):
     msg = user_msg.lower()
     host = clean_target_host(target)
 
-    if any(k in msg for k in ['root', 'shadow', 'شبح', 'صلاحيات', 'اسحب']):
+    if any(k in msg for k in ['صممك', 'عملك', 'برمجك', 'مين انت', 'صانعك', 'صاحبك', 'youssef', 'nasr', 'يوسف']):
+        return {
+            "title": "⚡ مطوري ومصممي هو المهندس Youssef Nasr",
+            "text": "أنا منظومة <strong>JOO AI DARK</strong> الهجومية لاختبار الاختراق الحقيقي.\nتم تصميمي وبرمجتي وتطويري بالكامل على يد المهندس <strong>Youssef Nasr</strong> (يوسف نصر) لتقديم عمليات فحص واختراق سيبراني حقيقية ومتقدمة.",
+            "badge": "CREATOR: YOUSSEF NASR",
+            "code": "DEVELOPER: YOUSSEF NASR\nPROJECT: JOO AI DARK V3.5\nCLOUD: FIREBASE FIRESTORE\nENGINE: REAL CYBERSECURITY SUITE"
+        }
+    elif any(k in msg for k in ['root', 'shadow', 'شبح', 'صلاحيات', 'اسحب']):
         return {
             "title": "💀 تم اختراق الكيرنل واستخراج الـ Root Shell (UID 0)",
             "text": f"أنا جوه السيرفر <code>{host}</code> بصلاحيات الـ Root المطلقة (UID 0).\nتم سحب ملف <code>/etc/shadow</code> وفك هاشات المشرفين بنجاح. سجلات الدخول (auth.log) تم تصفيرها بالكامل ومفيش أي أثر للعملية.",
